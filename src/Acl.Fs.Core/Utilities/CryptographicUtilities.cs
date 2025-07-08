@@ -10,6 +10,7 @@ internal static class CryptographicUtilities
     internal static void PrecomputeSalt(byte[] originalNonce, byte[] salt)
     {
         Span<byte> input = stackalloc byte[8];
+        
         try
         {
             BinaryPrimitives.WriteInt64LittleEndian(input, 0L);
