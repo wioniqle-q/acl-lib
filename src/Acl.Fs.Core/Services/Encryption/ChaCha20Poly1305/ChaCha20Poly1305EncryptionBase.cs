@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
+using Acl.Fs.Core.Interfaces;
 using Acl.Fs.Core.Interfaces.Encryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Interfaces.Factory;
 using Acl.Fs.Core.Models;
@@ -12,9 +13,14 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Services.Encryption.ChaCha20Poly1305;
 
-internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory chaCha20Poly1305Factory)
+internal sealed class ChaCha20Poly1305EncryptionBase(
+    IChaCha20Poly1305Factory chaCha20Poly1305Factory,
+    IAlignmentPolicy alignmentPolicy)
     : IChaCha20Poly1305EncryptionBase
 {
+    private readonly IAlignmentPolicy _alignmentPolicy =
+        alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
+
     private readonly IChaCha20Poly1305Factory _chaCha20Poly1305Factory =
         chaCha20Poly1305Factory ?? throw new ArgumentNullException(nameof(chaCha20Poly1305Factory));
 
@@ -25,22 +31,26 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, logger);
-        await using var destinationStream = CryptoUtilities.CreateOutputStream(instruction.DestinationPath, logger);
+        var fileOptions = _alignmentPolicy.GetFileOptions();
+
+        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var destinationStream =
+            CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
 
         var buffer = CryptoPool.Rent(BufferSize);
         var ciphertext = CryptoPool.Rent(BufferSize);
-        var metadataBuffer = CryptoPool.Rent(SectorSize);
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+        var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);
         var salt = CryptoPool.Rent(SaltSize);
 
         try
         {
-            PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer);
-            await WriteHeaderAsync(destinationStream, metadataBuffer, cancellationToken);
+            PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
+            await WriteHeaderAsync(destinationStream, metadataBuffer, metadataBufferSize, cancellationToken);
 
             await ProcessFileBlocksAsync(
                 sourceStream,
@@ -52,6 +62,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
                 tag,
                 chunkNonce,
                 salt,
+                metadataBufferSize,
                 cancellationToken);
         }
         finally
@@ -65,11 +76,12 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         }
     }
 
-    private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer)
+    private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer,
+        int metadataBufferSize)
     {
         CryptographicUtilities.PrecomputeSalt(nonce, salt);
 
-        metadataBuffer.AsSpan(0, VersionConstants.HeaderSize).Clear();
+        metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
 
         metadataBuffer[0] = VersionConstants.CurrentMajorVersion;
         metadataBuffer[1] = VersionConstants.CurrentMinorVersion;
@@ -93,14 +105,15 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
     private static async Task WriteHeaderAsync(
         System.IO.Stream destinationStream,
         byte[] metadataBuffer,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         await destinationStream.WriteAsync(
-            metadataBuffer.AsMemory(0, VersionConstants.HeaderSize),
+            metadataBuffer.AsMemory(0, metadataBufferSize),
             cancellationToken);
     }
 
-    private static async Task ProcessFileBlocksAsync(
+    private async Task ProcessFileBlocksAsync(
         System.IO.Stream sourceStream,
         System.IO.Stream destinationStream,
         System.Security.Cryptography.ChaCha20Poly1305 chaCha20Poly1305,
@@ -110,6 +123,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         byte[] tag,
         byte[] chunkNonce,
         byte[] salt,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
@@ -134,11 +148,12 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
                 bytesRead,
                 blockIndex,
                 totalBlocks,
+                metadataBufferSize,
                 cancellationToken);
         }
     }
 
-    private static async Task EncryptAndWriteBlockAsync(
+    private async Task EncryptAndWriteBlockAsync(
         System.IO.Stream destinationStream,
         System.Security.Cryptography.ChaCha20Poly1305 chaCha20Poly1305,
         byte[] buffer,
@@ -150,10 +165,11 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         int bytesRead,
         long blockIndex,
         long totalBlocks,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         var isLastBlock = blockIndex == totalBlocks - 1 || bytesRead < BufferSize;
-        var alignedSize = CryptoUtilities.CalculateAlignedSize(bytesRead, isLastBlock);
+        var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
         if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
@@ -162,6 +178,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         EncryptBlock(chaCha20Poly1305, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 
         await WriteEncryptedBlockAsync(destinationStream, metadataBuffer, tag, ciphertext, alignedSize,
+            metadataBufferSize,
             cancellationToken);
     }
 
@@ -197,16 +214,25 @@ internal sealed class ChaCha20Poly1305EncryptionBase(IChaCha20Poly1305Factory ch
         byte[] tag,
         byte[] ciphertext,
         int alignedSize,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        metadataBuffer.AsSpan(0, SectorSize).Clear();
+        switch (metadataBufferSize)
+        {
+            case SectorSize:
+                metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
+                tag.AsSpan(0, TagSize).CopyTo(metadataBuffer);
+                await destinationStream.WriteAsync(
+                    metadataBuffer.AsMemory(0, metadataBufferSize),
+                    cancellationToken);
+                break;
 
-        tag.AsSpan(0, TagSize)
-            .CopyTo(metadataBuffer);
-
-        await destinationStream.WriteAsync(
-            metadataBuffer.AsMemory(0, SectorSize),
-            cancellationToken);
+            default:
+                await destinationStream.WriteAsync(
+                    tag.AsMemory(0, TagSize),
+                    cancellationToken);
+                break;
+        }
 
         await destinationStream.WriteAsync(
             ciphertext.AsMemory(0, alignedSize),

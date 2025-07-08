@@ -5,6 +5,9 @@ namespace Acl.Fs.Core.UnitTests.Utilities;
 
 public sealed class CryptoUtilitiesTests : IDisposable
 {
+    private static readonly FileOptions DefaultFileOptions =
+        FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.WriteThrough;
+
     private readonly ILogger _logger;
     private readonly string _tempDirectory;
     private readonly List<string> _tempFiles;
@@ -36,9 +39,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var tempFile = CreateTempFile("test content");
 
-
-        using var stream = CryptoUtilities.CreateInputStream(tempFile, _logger);
-
+        using var stream = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream);
         Assert.True(stream.CanRead);
@@ -53,7 +54,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
 
         var tempFile = CreateTempFile(testContent);
 
-        using var stream = CryptoUtilities.CreateInputStream(tempFile, _logger);
+        using var stream = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         using var reader = new StreamReader(stream);
         var content = reader.ReadToEnd();
 
@@ -66,7 +67,8 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var nonExistentPath = Path.Combine(_tempDirectory, "nonexistent.txt");
 
-        Assert.ThrowsAny<Exception>(() => CryptoUtilities.CreateInputStream(nonExistentPath, _logger));
+        Assert.ThrowsAny<Exception>(() =>
+            CryptoUtilities.CreateInputStream(nonExistentPath, DefaultFileOptions, _logger));
     }
 
     [Fact]
@@ -74,7 +76,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream = CryptoUtilities.CreateOutputStream(outputPath, _logger);
+        using var stream = CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream);
         Assert.True(stream.CanWrite);
@@ -87,7 +89,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using (var _ = CryptoUtilities.CreateOutputStream(outputPath, _logger))
+        using (var _ = CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
         {
         }
 
@@ -100,7 +102,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
         var outputPath = CreateTempFile("original content");
         var originalLength = new FileInfo(outputPath).Length;
 
-        using (CryptoUtilities.CreateOutputStream(outputPath, _logger))
+        using (CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
         {
         }
 
@@ -115,7 +117,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
 
         var exception = Record.Exception(() =>
         {
-            using var stream = CryptoUtilities.CreateInputStream(tempFile, _logger);
+            using var stream = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         });
 
         Assert.Null(exception);
@@ -128,7 +130,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
 
         var exception = Record.Exception(() =>
         {
-            using var stream = CryptoUtilities.CreateOutputStream(outputPath, _logger);
+            using var stream = CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
         });
 
         Assert.Null(exception);
@@ -140,8 +142,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
         var largeContent = new string('X', 5000);
         var tempFile = CreateTempFile(largeContent);
 
-
-        using var stream = CryptoUtilities.CreateInputStream(tempFile, _logger);
+        using var stream = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         using var reader = new StreamReader(stream);
         var content = reader.ReadToEnd();
 
@@ -155,7 +156,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var tempFile = CreateTempFile("test");
 
-        using var stream = CryptoUtilities.CreateInputStream(tempFile, _logger);
+        using var stream = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.True(stream.CanRead);
         Assert.False(stream.CanWrite);
@@ -166,7 +167,7 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream = CryptoUtilities.CreateOutputStream(outputPath, _logger);
+        using var stream = CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
         Assert.True(stream.CanWrite);
         Assert.False(stream.CanRead);
@@ -178,8 +179,8 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var tempFile = CreateTempFile("shared content");
 
-        using var stream1 = CryptoUtilities.CreateInputStream(tempFile, _logger);
-        using var stream2 = CryptoUtilities.CreateInputStream(tempFile, _logger);
+        using var stream1 = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream2 = CryptoUtilities.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream1);
         Assert.NotNull(stream2);
@@ -192,9 +193,9 @@ public sealed class CryptoUtilitiesTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream1 = CryptoUtilities.CreateOutputStream(outputPath, _logger);
+        using var stream1 = CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
-        Assert.ThrowsAny<Exception>(() => CryptoUtilities.CreateOutputStream(outputPath, _logger));
+        Assert.ThrowsAny<Exception>(() => CryptoUtilities.CreateOutputStream(outputPath, DefaultFileOptions, _logger));
     }
 
     [Fact]

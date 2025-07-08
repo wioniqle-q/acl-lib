@@ -9,6 +9,7 @@ using Acl.Fs.Core.Services.Decryption.AesGcm;
 using Acl.Fs.Core.Services.Decryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Services.Encryption.AesGcm;
 using Acl.Fs.Core.Services.Encryption.ChaCha20Poly1305;
+using Acl.Fs.Core.Services.Policies;
 using Acl.Fs.Core.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,6 +21,12 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAclFsCore(this IServiceCollection services)
     {
         services.TryAddSingleton<IFileVersionValidator, FileVersionValidator>();
+
+#if ALLOW_ALIGNMENT_POLICY
+        services.TryAddScoped<IAlignmentPolicy, SectorAlignedPolicy>(); // Experimental
+#else
+        services.TryAddScoped<IAlignmentPolicy, UnalignedPolicy>(); // Production
+#endif
 
         return services;
     }

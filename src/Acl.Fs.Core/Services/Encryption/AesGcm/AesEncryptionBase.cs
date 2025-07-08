@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
+using Acl.Fs.Core.Interfaces;
 using Acl.Fs.Core.Interfaces.Encryption.AesGcm;
 using Acl.Fs.Core.Interfaces.Factory;
 using Acl.Fs.Core.Models;
@@ -12,11 +13,14 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Services.Encryption.AesGcm;
 
-internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
+internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignmentPolicy alignmentPolicy)
     : IAesEncryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
         aesGcmFactory ?? throw new ArgumentNullException(nameof(aesGcmFactory));
+
+    private readonly IAlignmentPolicy _alignmentPolicy =
+        alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
 
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
@@ -25,22 +29,26 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, logger);
-        await using var destinationStream = CryptoUtilities.CreateOutputStream(instruction.DestinationPath, logger);
+        var fileOptions = _alignmentPolicy.GetFileOptions();
+
+        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var destinationStream =
+            CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         using var aesGcm = _aesGcmFactory.Create(key);
 
         var buffer = CryptoPool.Rent(BufferSize);
         var ciphertext = CryptoPool.Rent(BufferSize);
-        var metadataBuffer = CryptoPool.Rent(SectorSize);
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+        var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);
         var salt = CryptoPool.Rent(SaltSize);
 
         try
         {
-            PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer);
-            await WriteHeaderAsync(destinationStream, metadataBuffer, cancellationToken);
+            PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
+            await WriteHeaderAsync(destinationStream, metadataBuffer, metadataBufferSize, cancellationToken);
 
             await ProcessFileBlocksAsync(
                 sourceStream,
@@ -52,6 +60,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
                 tag,
                 chunkNonce,
                 salt,
+                metadataBufferSize,
                 cancellationToken);
         }
         finally
@@ -65,11 +74,12 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         }
     }
 
-    private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer)
+    private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer,
+        int metadataBufferSize)
     {
         CryptographicUtilities.PrecomputeSalt(nonce, salt);
 
-        metadataBuffer.AsSpan(0, VersionConstants.HeaderSize).Clear();
+        metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
 
         metadataBuffer[0] = VersionConstants.CurrentMajorVersion;
         metadataBuffer[1] = VersionConstants.CurrentMinorVersion;
@@ -92,14 +102,15 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
     private static async Task WriteHeaderAsync(
         System.IO.Stream destinationStream,
         byte[] metadataBuffer,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         await destinationStream.WriteAsync(
-            metadataBuffer.AsMemory(0, VersionConstants.HeaderSize),
+            metadataBuffer.AsMemory(0, metadataBufferSize),
             cancellationToken);
     }
 
-    private static async Task ProcessFileBlocksAsync(
+    private async Task ProcessFileBlocksAsync(
         System.IO.Stream sourceStream,
         System.IO.Stream destinationStream,
         System.Security.Cryptography.AesGcm aesGcm,
@@ -109,6 +120,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         byte[] tag,
         byte[] chunkNonce,
         byte[] salt,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
@@ -133,11 +145,12 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
                 bytesRead,
                 blockIndex,
                 totalBlocks,
+                metadataBufferSize,
                 cancellationToken);
         }
     }
 
-    private static async Task EncryptAndWriteBlockAsync(
+    private async Task EncryptAndWriteBlockAsync(
         System.IO.Stream destinationStream,
         System.Security.Cryptography.AesGcm aesGcm,
         byte[] buffer,
@@ -149,10 +162,11 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         int bytesRead,
         long blockIndex,
         long totalBlocks,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         var isLastBlock = blockIndex == totalBlocks - 1 || bytesRead < BufferSize;
-        var alignedSize = CryptoUtilities.CalculateAlignedSize(bytesRead, isLastBlock);
+        var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
         if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
@@ -161,7 +175,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize);
 
         await WriteEncryptedBlockAsync(destinationStream, metadataBuffer, tag, ciphertext, alignedSize,
-            cancellationToken);
+            metadataBufferSize, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -186,16 +200,25 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory)
         byte[] tag,
         byte[] ciphertext,
         int alignedSize,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        metadataBuffer.AsSpan(0, SectorSize).Clear();
+        switch (metadataBufferSize)
+        {
+            case SectorSize:
+                metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
+                tag.AsSpan(0, TagSize).CopyTo(metadataBuffer);
+                await destinationStream.WriteAsync(
+                    metadataBuffer.AsMemory(0, metadataBufferSize),
+                    cancellationToken);
+                break;
 
-        tag.AsSpan(0, TagSize)
-            .CopyTo(metadataBuffer);
-
-        await destinationStream.WriteAsync(
-            metadataBuffer.AsMemory(0, SectorSize),
-            cancellationToken);
+            default:
+                await destinationStream.WriteAsync(
+                    tag.AsMemory(0, TagSize),
+                    cancellationToken);
+                break;
+        }
 
         await destinationStream.WriteAsync(
             ciphertext.AsMemory(0, alignedSize),

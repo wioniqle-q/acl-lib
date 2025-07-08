@@ -8,10 +8,7 @@ namespace Acl.Fs.Core.Utilities;
 
 internal static class CryptoUtilities
 {
-    private static FileOptions FileOptions => FileOptions.Asynchronous | FileOptions.SequentialScan |
-                                              FileOptions.WriteThrough | (FileOptions)0x20000000;
-
-    internal static System.IO.Stream CreateInputStream(string path, ILogger logger)
+    internal static System.IO.Stream CreateInputStream(string path, FileOptions fileOptions, ILogger logger)
     {
         ArgumentException.ThrowIfNullOrEmpty(path, ErrorMessages.SourcePathCannotBeNullOrInvalid);
 
@@ -21,11 +18,11 @@ internal static class CryptoUtilities
             FileAccess.Read,
             FileShare.Read,
             BufferSize,
-            FileOptions,
+            fileOptions,
             logger);
     }
 
-    internal static System.IO.Stream CreateOutputStream(string path, ILogger logger)
+    internal static System.IO.Stream CreateOutputStream(string path, FileOptions fileOptions, ILogger logger)
     {
         ArgumentException.ThrowIfNullOrEmpty(path, ErrorMessages.DestinationPathCannotBeNullOrInvalid);
 
@@ -35,7 +32,7 @@ internal static class CryptoUtilities
             FileAccess.Write,
             FileShare.None,
             BufferSize,
-            FileOptions,
+            fileOptions,
             logger);
     }
 

@@ -15,10 +15,14 @@ namespace Acl.Fs.Core.Services.Decryption.AesGcm;
 
 internal sealed class AesDecryptionBase(
     IAesGcmFactory aesGcmFactory,
-    IFileVersionValidator versionValidator) : IAesDecryptionBase
+    IFileVersionValidator versionValidator,
+    IAlignmentPolicy alignmentPolicy) : IAesDecryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
         aesGcmFactory ?? throw new ArgumentNullException(nameof(aesGcmFactory));
+
+    private readonly IAlignmentPolicy _alignmentPolicy =
+        alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
 
     private readonly IFileVersionValidator _versionValidator =
         versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
@@ -29,8 +33,11 @@ internal sealed class AesDecryptionBase(
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, logger);
-        await using var destinationStream = CryptoUtilities.CreateOutputStream(instruction.DestinationPath, logger);
+        var fileOptions = _alignmentPolicy.GetFileOptions();
+
+        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var destinationStream =
+            CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         await ExecuteDecryptionProcessAsync(
             key,
@@ -52,14 +59,16 @@ internal sealed class AesDecryptionBase(
         var buffer = CryptoPool.Rent(BufferSize);
         var plaintext = CryptoPool.Rent(BufferSize);
         var alignedBuffer = CryptoPool.Rent(BufferSize);
-        var metadataBuffer = CryptoPool.Rent(SectorSize);
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+        var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);
         var salt = CryptoPool.Rent(SaltSize);
 
         try
         {
-            var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, cancellationToken);
+            var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, metadataBufferSize,
+                cancellationToken);
 
             await ProcessFileBlocksAsync(
                 sourceStream,
@@ -73,6 +82,7 @@ internal sealed class AesDecryptionBase(
                 chunkNonce,
                 salt,
                 originalSize,
+                metadataBufferSize,
                 cancellationToken);
         }
         finally
@@ -91,10 +101,11 @@ internal sealed class AesDecryptionBase(
         System.IO.Stream sourceStream,
         byte[] metadataBuffer,
         byte[] salt,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
         await sourceStream.ReadExactlyAsync(
-            metadataBuffer.AsMemory(0, VersionConstants.HeaderSize),
+            metadataBuffer.AsMemory(0, metadataBufferSize),
             cancellationToken);
 
         var metadataSpan = metadataBuffer.AsSpan();
@@ -115,7 +126,7 @@ internal sealed class AesDecryptionBase(
         return originalSize;
     }
 
-    private static async Task ProcessFileBlocksAsync(
+    private async Task ProcessFileBlocksAsync(
         System.IO.Stream sourceStream,
         System.IO.Stream destinationStream,
         System.Security.Cryptography.AesGcm aesGcm,
@@ -127,20 +138,37 @@ internal sealed class AesDecryptionBase(
         byte[] chunkNonce,
         byte[] salt,
         long originalSize,
+        int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        var totalBlocks = (sourceStream.Length - SectorSize + SectorSize + BufferSize - 1) / (SectorSize + BufferSize);
+        var isSectorAligned = metadataBufferSize is SectorSize;
+
+        var totalBlocks = isSectorAligned
+            ? (sourceStream.Length - metadataBufferSize + metadataBufferSize + BufferSize - 1) /
+              (metadataBufferSize + BufferSize)
+            : (sourceStream.Length - metadataBufferSize + TagSize + BufferSize - 1) / (TagSize + BufferSize);
 
         var processedBytes = 0L;
 
         for (long blockIndex = 0; blockIndex < totalBlocks; blockIndex++)
         {
-            await sourceStream.ReadExactlyAsync(
-                metadataBuffer.AsMemory(0, SectorSize),
-                cancellationToken);
+            switch (isSectorAligned)
+            {
+                case true:
+                    await sourceStream.ReadExactlyAsync(
+                        metadataBuffer.AsMemory(0, metadataBufferSize),
+                        cancellationToken);
 
-            var metadataSpan = metadataBuffer.AsSpan();
-            metadataSpan[..TagSize].CopyTo(tag);
+                    var metadataSpan = metadataBuffer.AsSpan();
+                    metadataSpan[..TagSize].CopyTo(tag);
+                    break;
+
+                default:
+                    await sourceStream.ReadExactlyAsync(
+                        tag.AsMemory(0, TagSize),
+                        cancellationToken);
+                    break;
+            }
 
             var bytesRead = await sourceStream.ReadAsync(
                 buffer.AsMemory(0, BufferSize),
@@ -170,7 +198,7 @@ internal sealed class AesDecryptionBase(
         }
     }
 
-    private static async Task DecryptAndWriteBlockAsync(
+    private async Task DecryptAndWriteBlockAsync(
         System.IO.Stream destinationStream,
         System.Security.Cryptography.AesGcm aesGcm,
         byte[] buffer,
@@ -185,7 +213,8 @@ internal sealed class AesDecryptionBase(
         long originalSize,
         CancellationToken cancellationToken)
     {
-        var blockSize = CryptoUtilities.CalculateAlignedSize(bytesRead);
+        var isLastBlock = processedBytes + bytesRead >= originalSize;
+        var blockSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
         CryptographicUtilities.DeriveNonce(salt, blockIndex, chunkNonce);
 
@@ -224,7 +253,7 @@ internal sealed class AesDecryptionBase(
             plaintext.AsSpan(0, blockSize));
     }
 
-    private static async Task WriteLastBlockAsync(
+    private async Task WriteLastBlockAsync(
         System.IO.Stream destinationStream,
         byte[] plaintext,
         byte[] alignedBuffer,
@@ -232,7 +261,7 @@ internal sealed class AesDecryptionBase(
         long originalSize,
         CancellationToken cancellationToken)
     {
-        var alignedSize = CryptoUtilities.CalculateAlignedSize(bytesToWrite);
+        var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesToWrite, true);
 
         alignedBuffer.AsSpan(0, alignedSize).Clear();
         plaintext.AsSpan(0, bytesToWrite).CopyTo(alignedBuffer);

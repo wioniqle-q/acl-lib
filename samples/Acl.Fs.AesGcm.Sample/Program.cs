@@ -216,7 +216,7 @@ internal static class Program
             .AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Debug))
             .BuildServiceProvider();
 
-       var sourceFilePaths = new[]
+        var sourceFilePaths = new[]
         {
             Path.Combine(@"", "")
         }.Where(File.Exists).ToArray();

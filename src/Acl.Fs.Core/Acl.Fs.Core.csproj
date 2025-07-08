@@ -17,6 +17,12 @@
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
+    <!--
+    <PropertyGroup>
+        <DefineConstants>ALLOW_ALIGNMENT_POLICY</DefineConstants>
+    </PropertyGroup>
+    -->
+
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
