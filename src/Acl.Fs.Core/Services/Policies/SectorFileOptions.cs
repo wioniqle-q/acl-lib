@@ -1,7 +1,10 @@
-﻿namespace Acl.Fs.Core.Services.Policies;
+﻿using System.Runtime.CompilerServices;
+
+namespace Acl.Fs.Core.Services.Policies;
 
 internal static class SectorFileOptions
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static FileOptions GetFileOptions(bool sectorAligned)
     {
         var options = FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.WriteThrough;
