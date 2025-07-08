@@ -23,7 +23,7 @@ I welcome bug reports, feature requests, and general feedback. When filing an is
 
 If you discover a security vulnerability, please report it privately.
 
-- Sending an email to wioniqle.q@gmail.com.
+- Sending an email to acl-lib.recovery282@passinbox.com.
 - Include detailed information about the vulnerability.
 - Providing steps to reproduce the issue.
 
