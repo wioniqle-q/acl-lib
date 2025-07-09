@@ -128,7 +128,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
 
-        for (long blockIndex = 0; blockIndex < totalBlocks; blockIndex++)
+        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
             var bytesRead = await sourceStream.ReadAsync(
                 buffer.AsMemory(0, BufferSize),

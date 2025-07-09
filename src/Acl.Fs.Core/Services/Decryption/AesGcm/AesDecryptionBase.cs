@@ -152,7 +152,7 @@ internal sealed class AesDecryptionBase(
 
         var processedBytes = 0L;
 
-        for (long blockIndex = 0; blockIndex < totalBlocks; blockIndex++)
+        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
             switch (isSectorAligned)
             {
