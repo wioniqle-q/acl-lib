@@ -30,6 +30,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
         CancellationToken cancellationToken)
     {
         var fileOptions = _alignmentPolicy.GetFileOptions();
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
         await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
@@ -39,7 +40,6 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
 
         var buffer = CryptoPool.Rent(BufferSize);
         var ciphertext = CryptoPool.Rent(BufferSize);
-        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
         var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);

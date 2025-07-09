@@ -7,7 +7,7 @@ internal static class VersionConstants
 
     internal const int VersionHeaderSize = 2;
 
-    private static int UnalignedHeaderSize =>
+    internal static int UnalignedHeaderSize =>
         VersionHeaderSize + KeyVaultConstants.NonceSize + sizeof(long) + KeyVaultConstants.SaltSize;
 
     internal static int HeaderSize => (UnalignedHeaderSize + StorageConstants.SectorSize - 1) /

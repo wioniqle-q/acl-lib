@@ -49,7 +49,8 @@ public sealed class AlignedPolicyTests
     [InlineData(1000, false, 1000)]
     [InlineData(1024, false, 1024)]
     [InlineData(1025, false, 1025)]
-    public void CalculateProcessingSize_VariousInputs_ReturnsCorrectResult(int bytesRead, bool isLastBlock, int expected)
+    public void CalculateProcessingSize_VariousInputs_ReturnsCorrectResult(int bytesRead, bool isLastBlock,
+        int expected)
     {
         var result = _alignedPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
@@ -69,10 +70,10 @@ public sealed class AlignedPolicyTests
     {
         var result = _alignedPolicy.GetFileOptions();
 
-        const FileOptions expectedOptions = FileOptions.Asynchronous | 
-                                            FileOptions.SequentialScan | 
-                                            FileOptions.WriteThrough | 
-                                            (FileOptions)0x20000000; 
+        const FileOptions expectedOptions = FileOptions.Asynchronous |
+                                            FileOptions.SequentialScan |
+                                            FileOptions.WriteThrough |
+                                            (FileOptions)0x20000000;
 
         Assert.Equal(expectedOptions, result);
     }

@@ -142,11 +142,13 @@ internal sealed class AesDecryptionBase(
         CancellationToken cancellationToken)
     {
         var isSectorAligned = metadataBufferSize is SectorSize;
+        var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
 
         var totalBlocks = isSectorAligned
-            ? (sourceStream.Length - metadataBufferSize + metadataBufferSize + BufferSize - 1) /
-              (metadataBufferSize + BufferSize)
-            : (sourceStream.Length - metadataBufferSize + TagSize + BufferSize - 1) / (TagSize + BufferSize);
+            ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) /
+              (SectorSize + BufferSize)
+            : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) /
+              (TagSize + BufferSize);
 
         var processedBytes = 0L;
 

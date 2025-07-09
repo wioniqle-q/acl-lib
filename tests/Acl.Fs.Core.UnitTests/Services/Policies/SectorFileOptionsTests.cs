@@ -9,9 +9,9 @@ public sealed class SectorFileOptionsTests
     {
         var result = SectorFileOptions.GetFileOptions(true);
 
-        const FileOptions expectedOptions = FileOptions.Asynchronous | 
-                                            FileOptions.SequentialScan | 
-                                            FileOptions.WriteThrough | 
+        const FileOptions expectedOptions = FileOptions.Asynchronous |
+                                            FileOptions.SequentialScan |
+                                            FileOptions.WriteThrough |
                                             (FileOptions)0x20000000;
 
         Assert.Equal(expectedOptions, result);
@@ -33,8 +33,8 @@ public sealed class SectorFileOptionsTests
     {
         var result = SectorFileOptions.GetFileOptions(false);
 
-        const FileOptions expectedOptions = FileOptions.Asynchronous | 
-                                            FileOptions.SequentialScan | 
+        const FileOptions expectedOptions = FileOptions.Asynchronous |
+                                            FileOptions.SequentialScan |
                                             FileOptions.WriteThrough;
 
         Assert.Equal(expectedOptions, result);

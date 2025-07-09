@@ -51,7 +51,7 @@ public sealed class UnalignedPolicyTests
     public void GetMetadataBufferSize_ReturnsExpectedSize()
     {
         var result = _unalignedPolicy.GetMetadataBufferSize();
-        
+
         var expectedSize = VersionConstants.VersionHeaderSize + NonceSize + sizeof(long) + SaltSize;
 
         Assert.Equal(expectedSize, result);
@@ -71,8 +71,8 @@ public sealed class UnalignedPolicyTests
     {
         var result = _unalignedPolicy.GetFileOptions();
 
-        const FileOptions expectedOptions = FileOptions.Asynchronous | 
-                                            FileOptions.SequentialScan | 
+        const FileOptions expectedOptions = FileOptions.Asynchronous |
+                                            FileOptions.SequentialScan |
                                             FileOptions.WriteThrough;
 
         Assert.Equal(expectedOptions, result);

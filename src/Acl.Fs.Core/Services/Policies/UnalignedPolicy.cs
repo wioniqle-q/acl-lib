@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
 using Acl.Fs.Core.Interfaces;
-using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Services.Policies;
 
@@ -16,7 +15,7 @@ internal sealed class UnalignedPolicy : IAlignmentPolicy
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetMetadataBufferSize()
     {
-        return VersionConstants.VersionHeaderSize + NonceSize + sizeof(long) + SaltSize;
+        return VersionConstants.UnalignedHeaderSize;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

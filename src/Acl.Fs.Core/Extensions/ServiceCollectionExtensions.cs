@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IFileVersionValidator, FileVersionValidator>();
 
 #if ALLOW_ALIGNMENT_POLICY
-        services.TryAddScoped<IAlignmentPolicy, SectorAlignedPolicy>(); // Experimental
+        services.TryAddScoped<IAlignmentPolicy, AlignedPolicy>(); // Experimental
 #else
         services.TryAddScoped<IAlignmentPolicy, UnalignedPolicy>(); // Production
 #endif

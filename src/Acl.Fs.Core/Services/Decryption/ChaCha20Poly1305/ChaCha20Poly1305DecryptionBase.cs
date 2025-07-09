@@ -57,11 +57,11 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         cancellationToken.ThrowIfCancellationRequested();
 
         using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
         var buffer = CryptoPool.Rent(BufferSize);
         var plaintext = CryptoPool.Rent(BufferSize);
         var alignedBuffer = CryptoPool.Rent(BufferSize);
-        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
         var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);
@@ -144,11 +144,11 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         CancellationToken cancellationToken)
     {
         var isSectorAligned = metadataBufferSize is SectorSize;
+        var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
 
         var totalBlocks = isSectorAligned
-            ? (sourceStream.Length - metadataBufferSize + metadataBufferSize + BufferSize - 1) /
-              (metadataBufferSize + BufferSize)
-            : (sourceStream.Length - metadataBufferSize + TagSize + BufferSize - 1) / (TagSize + BufferSize);
+            ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) / (SectorSize + BufferSize)
+            : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) / (TagSize + BufferSize);
 
         var processedBytes = 0L;
 
@@ -158,7 +158,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             {
                 case true:
                     await sourceStream.ReadExactlyAsync(
-                        metadataBuffer.AsMemory(0, metadataBufferSize),
+                        metadataBuffer.AsMemory(0, SectorSize),
                         cancellationToken);
 
                     var metadataSpan = metadataBuffer.AsSpan();
