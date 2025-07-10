@@ -36,10 +36,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Remove="UnitTest1.cs"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\..\src\Acl.Fs.Audit\Acl.Fs.Audit.csproj"/>
     </ItemGroup>
 
