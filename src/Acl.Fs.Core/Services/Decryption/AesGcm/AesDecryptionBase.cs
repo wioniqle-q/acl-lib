@@ -1,11 +1,16 @@
 ﻿using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
+using Acl.Fs.Audit.Abstractions;
+using Acl.Fs.Audit.Categories;
+using Acl.Fs.Audit.Constants;
+using Acl.Fs.Audit.Extensions;
 using Acl.Fs.Core.Interfaces;
 using Acl.Fs.Core.Interfaces.Decryption.AesGcm;
 using Acl.Fs.Core.Interfaces.Factory;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Pool;
+using Acl.Fs.Core.Resources;
 using Acl.Fs.Core.Utilities;
 using Microsoft.Extensions.Logging;
 using static Acl.Fs.Abstractions.Constants.StorageConstants;
@@ -16,7 +21,9 @@ namespace Acl.Fs.Core.Services.Decryption.AesGcm;
 internal sealed class AesDecryptionBase(
     IAesGcmFactory aesGcmFactory,
     IFileVersionValidator versionValidator,
-    IAlignmentPolicy alignmentPolicy) : IAesDecryptionBase
+    IAlignmentPolicy alignmentPolicy, 
+    IAuditLogger auditLogger
+    ) : IAesDecryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
         aesGcmFactory ?? throw new ArgumentNullException(nameof(aesGcmFactory));
@@ -26,6 +33,9 @@ internal sealed class AesDecryptionBase(
 
     private readonly IFileVersionValidator _versionValidator =
         versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
+    
+    private readonly IAuditLogger _auditLogger =
+        auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
 
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
@@ -33,12 +43,37 @@ internal sealed class AesDecryptionBase(
         ILogger logger,
         CancellationToken cancellationToken)
     {
+        await _auditLogger.AuditAsync(
+            AuditCategory.CryptoIntegrity,
+            AuditMessages.DecryptionProcessStarted,
+            AuditEventIds.DecryptionStarted,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.Algorithm, "AES-GCM" }
+            }, cancellationToken);
+        
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
         await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
             CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.InputStreamOpened,
+            AuditEventIds.DecryptionInputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+            }, cancellationToken);
+
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.OutputStreamOpened,
+            AuditEventIds.DecryptionOutputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+            }, cancellationToken);
+        
         await ExecuteDecryptionProcessAsync(
             key,
             sourceStream,
@@ -70,6 +105,12 @@ internal sealed class AesDecryptionBase(
             var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, metadataBufferSize,
                 cancellationToken);
 
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionHeaderRead,
+                AuditEventIds.DecryptionHeaderRead,
+                cancellationToken: cancellationToken);
+            
             await ProcessFileBlocksAsync(
                 sourceStream,
                 destinationStream,
@@ -84,6 +125,28 @@ internal sealed class AesDecryptionBase(
                 originalSize,
                 metadataBufferSize,
                 cancellationToken);
+            
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionProcessCompleted,
+                AuditEventIds.DecryptionCompleted,
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionFailed,
+                AuditEventIds.DecryptionError,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
+                cancellationToken);
+
+            throw;
         }
         finally
         {
@@ -141,62 +204,84 @@ internal sealed class AesDecryptionBase(
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        var isSectorAligned = metadataBufferSize is SectorSize;
-        var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
-
-        var totalBlocks = isSectorAligned
-            ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) /
-              (SectorSize + BufferSize)
-            : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) /
-              (TagSize + BufferSize);
-
-        var processedBytes = 0L;
-
-        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
+        var blockIndex = 0L;
+        
+        try
         {
-            switch (isSectorAligned)
+            var isSectorAligned = metadataBufferSize is SectorSize;
+            var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
+
+            var totalBlocks = isSectorAligned
+                ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) /
+                  (SectorSize + BufferSize)
+                : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) /
+                  (TagSize + BufferSize);
+
+            var processedBytes = 0L;
+
+            for (blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
             {
-                case true:
-                    await sourceStream.ReadExactlyAsync(
-                        metadataBuffer.AsMemory(0, metadataBufferSize),
-                        cancellationToken);
+                switch (isSectorAligned)
+                {
+                    case true:
+                        await sourceStream.ReadExactlyAsync(
+                            metadataBuffer.AsMemory(0, metadataBufferSize),
+                            cancellationToken);
 
-                    var metadataSpan = metadataBuffer.AsSpan();
-                    metadataSpan[..TagSize].CopyTo(tag);
-                    break;
+                        var metadataSpan = metadataBuffer.AsSpan();
+                        metadataSpan[..TagSize].CopyTo(tag);
+                        break;
 
-                default:
-                    await sourceStream.ReadExactlyAsync(
-                        tag.AsMemory(0, TagSize),
-                        cancellationToken);
-                    break;
+                    default:
+                        await sourceStream.ReadExactlyAsync(
+                            tag.AsMemory(0, TagSize),
+                            cancellationToken);
+                        break;
+                }
+
+                var bytesRead = await sourceStream.ReadAsync(
+                    buffer.AsMemory(0, BufferSize),
+                    cancellationToken);
+
+                if (bytesRead is 0) break;
+
+                await DecryptAndWriteBlockAsync(
+                    destinationStream,
+                    aesGcm,
+                    buffer,
+                    plaintext,
+                    alignedBuffer,
+                    tag,
+                    chunkNonce,
+                    salt,
+                    bytesRead,
+                    blockIndex,
+                    processedBytes,
+                    originalSize,
+                    cancellationToken);
+
+                var bytesToWrite = (int)Math.Min(bytesRead, originalSize - processedBytes);
+                processedBytes += bytesToWrite;
+
+                if (processedBytes >= originalSize) break;
             }
-
-            var bytesRead = await sourceStream.ReadAsync(
-                buffer.AsMemory(0, BufferSize),
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.BlockDecryptionFailed,
+                AuditEventIds.BlockDecryptionFailed,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.BlockIndex, blockIndex },
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
                 cancellationToken);
 
-            if (bytesRead is 0) break;
-
-            await DecryptAndWriteBlockAsync(
-                destinationStream,
-                aesGcm,
-                buffer,
-                plaintext,
-                alignedBuffer,
-                tag,
-                chunkNonce,
-                salt,
-                bytesRead,
-                blockIndex,
-                processedBytes,
-                originalSize,
-                cancellationToken);
-
-            var bytesToWrite = (int)Math.Min(bytesRead, originalSize - processedBytes);
-            processedBytes += bytesToWrite;
-
-            if (processedBytes >= originalSize) break;
+            throw;
         }
     }
 

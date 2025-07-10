@@ -2,16 +2,15 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>preview</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <LangVersion>preview</LangVersion>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <PropertyGroup>
         <Authors>wioniqle-q</Authors>
         <Copyright>wioniqle-q</Copyright>
-        <Description>Stream Library to the filestream operations on specific OS</Description>
+        <Description>Audit Library for the logging component</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/wioniqle-q/acl-lib</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wioniqle-q/acl-lib</RepositoryUrl>
@@ -20,11 +19,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Acl.Fs.Abstractions\Acl.Fs.Abstractions.csproj"/>
-        <ProjectReference Include="..\Acl.Fs.Native\Acl.Fs.Native.csproj"/>
     </ItemGroup>
 
 </Project>

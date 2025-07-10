@@ -11,6 +11,10 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
       <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
+      <PackageReference Include="Serilog" Version="4.3.0" />
+      <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+      <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -18,6 +22,7 @@
         <ProjectReference Include="..\..\src\Acl.Fs.Core\Acl.Fs.Core.csproj"/>
         <ProjectReference Include="..\..\src\Acl.Fs.Native\Acl.Fs.Native.csproj"/>
         <ProjectReference Include="..\..\src\Acl.Fs.Stream\Acl.Fs.Stream.csproj"/>
+        <ProjectReference Include="..\..\src\Acl.Fs.Audit\Acl.Fs.Audit.csproj"/>
     </ItemGroup>
     
 </Project>

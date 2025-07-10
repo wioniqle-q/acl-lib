@@ -1,0 +1,18 @@
+using Acl.Fs.Audit.Abstractions;
+using Acl.Fs.Audit.Entries;
+
+namespace Acl.Fs.Audit.Extensions;
+
+internal static class AuditLoggerExtensions
+{
+    internal static ValueTask AuditAsync(this IAuditLogger logger,
+        string category,
+        string message,
+        int eventId = 0,
+        IReadOnlyDictionary<string, object?>? diagnosticContext = null,
+        CancellationToken cancellationToken = default)
+    {
+        var entry = new AuditEntry(DateTimeOffset.UtcNow, category, message, eventId, diagnosticContext);
+        return logger.LogAsync(entry, cancellationToken);
+    }
+}

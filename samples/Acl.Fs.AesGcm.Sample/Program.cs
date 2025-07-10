@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Acl.Fs.Audit.Extensions;
 using Acl.Fs.Core.Extensions;
 using Acl.Fs.Core.Interfaces.Decryption.AesGcm;
 using Acl.Fs.Core.Interfaces.Encryption.AesGcm;
@@ -9,6 +10,7 @@ using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Models.AesGcm;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Acl.Fs.AesGcm.Sample;
 
@@ -210,10 +212,20 @@ internal static class Program
 
     private static async Task Main()
     {
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("app.log", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
         var serviceProvider = new ServiceCollection()
             .AddAclFsCore()
-            .AddAesGcmServices()
-            .AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Debug))
+            .AddAuditLogger()
+            .AddChaCha20Poly1305Services()
+            .AddLogging(configure =>
+            {
+                configure.AddSerilog(Log.Logger, dispose: true);
+            })
             .BuildServiceProvider();
 
         var sourceFilePaths = new[]

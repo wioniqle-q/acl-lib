@@ -1,6 +1,10 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
+using Acl.Fs.Audit.Abstractions;
+using Acl.Fs.Audit.Categories;
+using Acl.Fs.Audit.Constants;
+using Acl.Fs.Audit.Extensions;
 using Acl.Fs.Core.Interfaces;
 using Acl.Fs.Core.Interfaces.Decryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Interfaces.Factory;
@@ -10,18 +14,23 @@ using Acl.Fs.Core.Utilities;
 using Microsoft.Extensions.Logging;
 using static Acl.Fs.Abstractions.Constants.StorageConstants;
 using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
+using Acl.Fs.Core.Resources;
 
 namespace Acl.Fs.Core.Services.Decryption.ChaCha20Poly1305;
 
 internal sealed class ChaCha20Poly1305DecryptionBase(
     IFileVersionValidator versionValidator,
     IChaCha20Poly1305Factory chaCha20Poly1305Factory,
-    IAlignmentPolicy alignmentPolicy
+    IAlignmentPolicy alignmentPolicy,
+    IAuditLogger auditLogger
 )
     : IChaCha20Poly1305DecryptionBase
 {
     private readonly IAlignmentPolicy _alignmentPolicy =
         alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
+
+    private readonly IAuditLogger _auditLogger = auditLogger
+                                                 ?? throw new ArgumentNullException(nameof(auditLogger));
 
     private readonly IChaCha20Poly1305Factory _chaCha20Poly1305Factory =
         chaCha20Poly1305Factory ?? throw new ArgumentNullException(nameof(chaCha20Poly1305Factory));
@@ -35,11 +44,36 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         ILogger logger,
         CancellationToken cancellationToken)
     {
+        await _auditLogger.AuditAsync(
+            AuditCategory.CryptoIntegrity,
+            AuditMessages.DecryptionProcessStarted,
+            AuditEventIds.DecryptionStarted,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.Algorithm, "ChaCha20Poly1305" }
+            }, cancellationToken);
+
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
         await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
             CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.InputStreamOpened,
+            AuditEventIds.DecryptionInputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+            }, cancellationToken);
+
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.OutputStreamOpened,
+            AuditEventIds.DecryptionOutputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+            }, cancellationToken);
 
         await ExecuteDecryptionProcessAsync(
             key,
@@ -72,6 +106,12 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, metadataBufferSize,
                 cancellationToken);
 
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionHeaderRead,
+                AuditEventIds.DecryptionHeaderRead,
+                cancellationToken: cancellationToken);
+
             await ProcessFileBlocksAsync(
                 sourceStream,
                 destinationStream,
@@ -86,6 +126,28 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
                 originalSize,
                 metadataBufferSize,
                 cancellationToken);
+
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionProcessCompleted,
+                AuditEventIds.DecryptionCompleted,
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.DecryptionFailed,
+                AuditEventIds.DecryptionError,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
+                cancellationToken);
+
+            throw;
         }
         finally
         {
@@ -143,60 +205,82 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        var isSectorAligned = metadataBufferSize is SectorSize;
-        var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
+        var blockIndex = 0L;
 
-        var totalBlocks = isSectorAligned
-            ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) / (SectorSize + BufferSize)
-            : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) / (TagSize + BufferSize);
-
-        var processedBytes = 0L;
-
-        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
+        try
         {
-            switch (isSectorAligned)
+            var isSectorAligned = metadataBufferSize is SectorSize;
+            var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
+
+            var totalBlocks = isSectorAligned
+                ? (sourceStream.Length - headerLen + SectorSize + BufferSize - 1) / (SectorSize + BufferSize)
+                : (sourceStream.Length - headerLen + TagSize + BufferSize - 1) / (TagSize + BufferSize);
+
+            var processedBytes = 0L;
+
+            for (blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
             {
-                case true:
-                    await sourceStream.ReadExactlyAsync(
-                        metadataBuffer.AsMemory(0, SectorSize),
-                        cancellationToken);
+                switch (isSectorAligned)
+                {
+                    case true:
+                        await sourceStream.ReadExactlyAsync(
+                            metadataBuffer.AsMemory(0, SectorSize),
+                            cancellationToken);
 
-                    var metadataSpan = metadataBuffer.AsSpan();
-                    metadataSpan[..TagSize].CopyTo(tag);
-                    break;
+                        var metadataSpan = metadataBuffer.AsSpan();
+                        metadataSpan[..TagSize].CopyTo(tag);
+                        break;
 
-                default:
-                    await sourceStream.ReadExactlyAsync(
-                        tag.AsMemory(0, TagSize),
-                        cancellationToken);
-                    break;
+                    default:
+                        await sourceStream.ReadExactlyAsync(
+                            tag.AsMemory(0, TagSize),
+                            cancellationToken);
+                        break;
+                }
+
+                var bytesRead = await sourceStream.ReadAsync(
+                    buffer.AsMemory(0, BufferSize),
+                    cancellationToken);
+
+                if (bytesRead is 0) break;
+
+                await DecryptAndWriteBlockAsync(
+                    destinationStream,
+                    chaCha20Poly1305,
+                    buffer,
+                    plaintext,
+                    alignedBuffer,
+                    tag,
+                    chunkNonce,
+                    salt,
+                    bytesRead,
+                    blockIndex,
+                    processedBytes,
+                    originalSize,
+                    cancellationToken);
+
+                var bytesToWrite = (int)Math.Min(bytesRead, originalSize - processedBytes);
+                processedBytes += bytesToWrite;
+
+                if (processedBytes >= originalSize) break;
             }
-
-            var bytesRead = await sourceStream.ReadAsync(
-                buffer.AsMemory(0, BufferSize),
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.BlockDecryptionFailed,
+                AuditEventIds.BlockDecryptionFailed,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.BlockIndex, blockIndex },
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
                 cancellationToken);
 
-            if (bytesRead is 0) break;
-
-            await DecryptAndWriteBlockAsync(
-                destinationStream,
-                chaCha20Poly1305,
-                buffer,
-                plaintext,
-                alignedBuffer,
-                tag,
-                chunkNonce,
-                salt,
-                bytesRead,
-                blockIndex,
-                processedBytes,
-                originalSize,
-                cancellationToken);
-
-            var bytesToWrite = (int)Math.Min(bytesRead, originalSize - processedBytes);
-            processedBytes += bytesToWrite;
-
-            if (processedBytes >= originalSize) break;
+            throw;
         }
     }
 

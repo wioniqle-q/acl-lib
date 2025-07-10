@@ -1,11 +1,16 @@
 ﻿using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
+using Acl.Fs.Audit.Abstractions;
+using Acl.Fs.Audit.Categories;
+using Acl.Fs.Audit.Constants;
+using Acl.Fs.Audit.Extensions;
 using Acl.Fs.Core.Interfaces;
 using Acl.Fs.Core.Interfaces.Encryption.AesGcm;
 using Acl.Fs.Core.Interfaces.Factory;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Pool;
+using Acl.Fs.Core.Resources;
 using Acl.Fs.Core.Utilities;
 using Microsoft.Extensions.Logging;
 using static Acl.Fs.Abstractions.Constants.StorageConstants;
@@ -13,7 +18,10 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Services.Encryption.AesGcm;
 
-internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignmentPolicy alignmentPolicy)
+internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, 
+    IAlignmentPolicy alignmentPolicy,
+    IAuditLogger auditLogger
+    )
     : IAesEncryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
@@ -21,6 +29,9 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
 
     private readonly IAlignmentPolicy _alignmentPolicy =
         alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
+    
+    private readonly IAuditLogger _auditLogger = auditLogger
+                                                 ?? throw new ArgumentNullException(nameof(auditLogger));
 
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
@@ -29,6 +40,15 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
         ILogger logger,
         CancellationToken cancellationToken)
     {
+        await _auditLogger.AuditAsync(
+            AuditCategory.CryptoIntegrity,
+            AuditMessages.EncryptionProcessStarted,
+            AuditEventIds.EncryptionStarted,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.Algorithm, "AES-GCM" }
+            }, cancellationToken);
+        
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
@@ -36,6 +56,22 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
         await using var destinationStream =
             CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.InputStreamOpened,
+            AuditEventIds.EncryptionInputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+            }, cancellationToken);
+
+        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+            AuditMessages.OutputStreamOpened,
+            AuditEventIds.EncryptionOutputOpened,
+            new Dictionary<string, object?>
+            {
+                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+            }, cancellationToken);
+        
         using var aesGcm = _aesGcmFactory.Create(key);
 
         var buffer = CryptoPool.Rent(BufferSize);
@@ -48,7 +84,18 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
         try
         {
             PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
+            
+            await _auditLogger.AuditAsync(AuditCategory.Header,
+                AuditMessages.HeaderPrepared,
+                AuditEventIds.EncryptionHeaderPrepared,
+                cancellationToken: cancellationToken);
+            
             await WriteHeaderAsync(destinationStream, metadataBuffer, metadataBufferSize, cancellationToken);
+
+            await _auditLogger.AuditAsync(AuditCategory.Header,
+                AuditMessages.HeaderWritten,
+                AuditEventIds.EncryptionHeaderWritten,
+                cancellationToken: cancellationToken);
 
             await ProcessFileBlocksAsync(
                 sourceStream,
@@ -62,6 +109,29 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
                 salt,
                 metadataBufferSize,
                 cancellationToken);
+            
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.EncryptionProcessCompleted,
+                AuditEventIds.EncryptionCompleted,
+                cancellationToken: cancellationToken
+            );
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.EncryptionFailed,
+                AuditEventIds.EncryptionError,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
+                cancellationToken);
+
+            throw;
         }
         finally
         {
@@ -165,17 +235,37 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, IAlignment
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
-        var isLastBlock = blockIndex == totalBlocks - 1 || bytesRead < BufferSize;
-        var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
+        try
+        {
+            var isLastBlock = blockIndex == totalBlocks - 1 || bytesRead < BufferSize;
+            var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
-        if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
+            if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
-        CryptographicUtilities.DeriveNonce(salt, blockIndex, chunkNonce);
+            CryptographicUtilities.DeriveNonce(salt, blockIndex, chunkNonce);
 
-        EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize);
+            EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize);
 
-        await WriteEncryptedBlockAsync(destinationStream, metadataBuffer, tag, ciphertext, alignedSize,
-            metadataBufferSize, cancellationToken);
+            await WriteEncryptedBlockAsync(destinationStream, metadataBuffer, tag, ciphertext, alignedSize,
+                metadataBufferSize, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                AuditMessages.BlockEncryptionFailed,
+                AuditEventIds.BlockEncryptionFailed,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.BlockIndex, blockIndex },
+                    { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
+                    { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
+                    { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
+                },
+                cancellationToken);
+
+            throw;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
