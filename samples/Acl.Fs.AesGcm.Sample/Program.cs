@@ -301,6 +301,7 @@ internal static class Program
         finally
         {
             await serviceProvider.DisposeAsync();
+            Log.CloseAndFlush();
         }
 
         Console.WriteLine("\nProcessing completed. Press any key to exit.");
