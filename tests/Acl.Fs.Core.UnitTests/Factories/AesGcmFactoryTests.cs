@@ -7,7 +7,7 @@ namespace Acl.Fs.Core.UnitTests.Factories;
 public sealed class AesGcmFactoryTests
 {
     private readonly AesGcmFactory _factory = new();
-    
+
     [Fact]
     public void Create_ValidKey32Bytes_ReturnsAesGcmInstance()
     {
@@ -18,7 +18,7 @@ public sealed class AesGcmFactoryTests
 
         Assert.NotNull(result);
         Assert.IsType<AesGcm>(result);
-        
+
         result.Dispose();
     }
 

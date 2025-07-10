@@ -1,5 +1,5 @@
 ﻿using Acl.Fs.Abstractions.Constants;
-using Acl.Fs.Core.Services.Policies;
+using Acl.Fs.Core.Policies;
 using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Policies;

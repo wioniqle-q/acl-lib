@@ -1,4 +1,4 @@
-﻿using Acl.Fs.Core.Services.Policies;
+﻿using Acl.Fs.Core.Policies;
 
 namespace Acl.Fs.Core.UnitTests.Services.Policies;
 

@@ -1,26 +1,27 @@
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
 using Acl.Fs.Core.Interfaces;
+using Acl.Fs.Core.Utilities;
 
-namespace Acl.Fs.Core.Services.Policies;
+namespace Acl.Fs.Core.Policies;
 
-internal sealed class UnalignedPolicy : IAlignmentPolicy
+internal sealed class AlignedPolicy : IAlignmentPolicy
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int CalculateProcessingSize(int bytesRead, bool isLastBlock)
     {
-        return bytesRead;
+        return CryptoPrimitives.CalculateAlignedSize(bytesRead, isLastBlock);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetMetadataBufferSize()
     {
-        return VersionConstants.UnalignedHeaderSize;
+        return VersionConstants.HeaderSize;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FileOptions GetFileOptions()
     {
-        return SectorFileOptions.GetFileOptions(false);
+        return SectorFileOptions.GetFileOptions(true);
     }
 }

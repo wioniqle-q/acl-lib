@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Acl.Fs.Core.Services.Policies;
+namespace Acl.Fs.Core.Policies;
 
 internal static class SectorFileOptions
 {
@@ -8,7 +8,7 @@ internal static class SectorFileOptions
     internal static FileOptions GetFileOptions(bool sectorAligned)
     {
         var options = FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.WriteThrough;
-
+        
         if (sectorAligned)
             options |= (FileOptions)0x20000000;
 
