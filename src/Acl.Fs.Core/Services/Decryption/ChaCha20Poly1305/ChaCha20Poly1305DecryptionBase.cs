@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
 using Acl.Fs.Audit.Abstractions;
@@ -10,11 +11,11 @@ using Acl.Fs.Core.Interfaces.Decryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Interfaces.Factory;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Pool;
+using Acl.Fs.Core.Resources;
 using Acl.Fs.Core.Utilities;
 using Microsoft.Extensions.Logging;
 using static Acl.Fs.Abstractions.Constants.StorageConstants;
 using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
-using Acl.Fs.Core.Resources;
 
 namespace Acl.Fs.Core.Services.Decryption.ChaCha20Poly1305;
 
@@ -51,7 +52,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.Algorithm, "ChaCha20Poly1305" }
-            }, cancellationToken);
+            }.ToFrozenDictionary(), cancellationToken);
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
@@ -65,7 +66,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }, cancellationToken);
+            }.ToFrozenDictionary(), cancellationToken);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.OutputStreamOpened,
@@ -73,7 +74,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }, cancellationToken);
+            }.ToFrozenDictionary(), cancellationToken);
 
         await ExecuteDecryptionProcessAsync(
             key,
@@ -144,7 +145,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;
@@ -277,7 +278,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;

@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
 using Acl.Fs.Audit.Abstractions;
@@ -18,10 +19,11 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Services.Encryption.AesGcm;
 
-internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory, 
+internal sealed class AesEncryptionBase(
+    IAesGcmFactory aesGcmFactory,
     IAlignmentPolicy alignmentPolicy,
     IAuditLogger auditLogger
-    )
+)
     : IAesEncryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
@@ -29,7 +31,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
 
     private readonly IAlignmentPolicy _alignmentPolicy =
         alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
-    
+
     private readonly IAuditLogger _auditLogger = auditLogger
                                                  ?? throw new ArgumentNullException(nameof(auditLogger));
 
@@ -47,8 +49,8 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.Algorithm, "AES-GCM" }
-            }, cancellationToken);
-        
+            }.ToFrozenDictionary(), cancellationToken);
+
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
@@ -62,7 +64,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }, cancellationToken);
+            }.ToFrozenDictionary(), cancellationToken);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.OutputStreamOpened,
@@ -70,8 +72,8 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }, cancellationToken);
-        
+            }.ToFrozenDictionary(), cancellationToken);
+
         using var aesGcm = _aesGcmFactory.Create(key);
 
         var buffer = CryptoPool.Rent(BufferSize);
@@ -84,12 +86,12 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
         try
         {
             PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
-            
+
             await _auditLogger.AuditAsync(AuditCategory.Header,
                 AuditMessages.HeaderPrepared,
                 AuditEventIds.EncryptionHeaderPrepared,
                 cancellationToken: cancellationToken);
-            
+
             await WriteHeaderAsync(destinationStream, metadataBuffer, metadataBufferSize, cancellationToken);
 
             await _auditLogger.AuditAsync(AuditCategory.Header,
@@ -109,7 +111,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
                 salt,
                 metadataBufferSize,
                 cancellationToken);
-            
+
             await _auditLogger.AuditAsync(
                 AuditCategory.CryptoIntegrity,
                 AuditMessages.EncryptionProcessCompleted,
@@ -128,7 +130,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;
@@ -261,7 +263,7 @@ internal sealed class AesEncryptionBase(IAesGcmFactory aesGcmFactory,
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;

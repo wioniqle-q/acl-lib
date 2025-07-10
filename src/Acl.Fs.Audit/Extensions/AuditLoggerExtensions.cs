@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Acl.Fs.Audit.Abstractions;
 using Acl.Fs.Audit.Entries;
 
@@ -9,7 +10,7 @@ internal static class AuditLoggerExtensions
         string category,
         string message,
         int eventId = 0,
-        IReadOnlyDictionary<string, object?>? diagnosticContext = null,
+        FrozenDictionary<string, object?>? diagnosticContext = null,
         CancellationToken cancellationToken = default)
     {
         var entry = new AuditEntry(DateTimeOffset.UtcNow, category, message, eventId, diagnosticContext);

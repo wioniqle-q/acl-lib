@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using Acl.Fs.Abstractions.Constants;
 using Acl.Fs.Audit.Abstractions;
@@ -21,9 +22,9 @@ namespace Acl.Fs.Core.Services.Decryption.AesGcm;
 internal sealed class AesDecryptionBase(
     IAesGcmFactory aesGcmFactory,
     IFileVersionValidator versionValidator,
-    IAlignmentPolicy alignmentPolicy, 
+    IAlignmentPolicy alignmentPolicy,
     IAuditLogger auditLogger
-    ) : IAesDecryptionBase
+) : IAesDecryptionBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
         aesGcmFactory ?? throw new ArgumentNullException(nameof(aesGcmFactory));
@@ -31,11 +32,11 @@ internal sealed class AesDecryptionBase(
     private readonly IAlignmentPolicy _alignmentPolicy =
         alignmentPolicy ?? throw new ArgumentNullException(nameof(alignmentPolicy));
 
-    private readonly IFileVersionValidator _versionValidator =
-        versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
-    
     private readonly IAuditLogger _auditLogger =
         auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
+
+    private readonly IFileVersionValidator _versionValidator =
+        versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
 
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
@@ -50,8 +51,8 @@ internal sealed class AesDecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.Algorithm, "AES-GCM" }
-            }, cancellationToken);
-        
+            }.ToFrozenDictionary(), cancellationToken);
+
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
         await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
@@ -64,7 +65,7 @@ internal sealed class AesDecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }, cancellationToken);
+            }.ToFrozenDictionary(), cancellationToken);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.OutputStreamOpened,
@@ -72,8 +73,8 @@ internal sealed class AesDecryptionBase(
             new Dictionary<string, object?>
             {
                 { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }, cancellationToken);
-        
+            }.ToFrozenDictionary(), cancellationToken);
+
         await ExecuteDecryptionProcessAsync(
             key,
             sourceStream,
@@ -110,7 +111,7 @@ internal sealed class AesDecryptionBase(
                 AuditMessages.DecryptionHeaderRead,
                 AuditEventIds.DecryptionHeaderRead,
                 cancellationToken: cancellationToken);
-            
+
             await ProcessFileBlocksAsync(
                 sourceStream,
                 destinationStream,
@@ -125,7 +126,7 @@ internal sealed class AesDecryptionBase(
                 originalSize,
                 metadataBufferSize,
                 cancellationToken);
-            
+
             await _auditLogger.AuditAsync(
                 AuditCategory.CryptoIntegrity,
                 AuditMessages.DecryptionProcessCompleted,
@@ -143,7 +144,7 @@ internal sealed class AesDecryptionBase(
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;
@@ -205,7 +206,7 @@ internal sealed class AesDecryptionBase(
         CancellationToken cancellationToken)
     {
         var blockIndex = 0L;
-        
+
         try
         {
             var isSectorAligned = metadataBufferSize is SectorSize;
@@ -278,7 +279,7 @@ internal sealed class AesDecryptionBase(
                     { AuditMessages.ContextKeys.ExceptionType, ex.GetType().Name },
                     { AuditMessages.ContextKeys.ExceptionMessage, ex.Message },
                     { AuditMessages.ContextKeys.StackTrace, ex.StackTrace }
-                },
+                }.ToFrozenDictionary(),
                 cancellationToken);
 
             throw;

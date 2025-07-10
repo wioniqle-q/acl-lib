@@ -10,7 +10,7 @@ internal sealed class AesGcmFactory : IAesGcmFactory
     public AesGcm Create(byte[] key)
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
-        
+
         if (key.Length is 0)
             throw new ArgumentException(ErrorMessages.InvalidKeySize, nameof(key));
 

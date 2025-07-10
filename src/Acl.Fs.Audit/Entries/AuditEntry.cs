@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Acl.Fs.Audit.Abstractions;
 
 namespace Acl.Fs.Audit.Entries;
@@ -7,7 +8,7 @@ internal readonly struct AuditEntry(
     string category,
     string message,
     int eventId = 0,
-    IReadOnlyDictionary<string, object?>? diagnosticContext = null)
+    FrozenDictionary<string, object?>? diagnosticContext = null)
     : IAuditEntry
 {
     public DateTimeOffset TimestampUtc { get; } = timestampUtc;
@@ -15,6 +16,6 @@ internal readonly struct AuditEntry(
     public string Message { get; } = message;
     public int EventId { get; } = eventId;
 
-    public IReadOnlyDictionary<string, object?> DiagnosticContext { get; } =
-        diagnosticContext ?? new Dictionary<string, object?>();
+    public FrozenDictionary<string, object?> DiagnosticContext { get; } =
+        diagnosticContext ?? FrozenDictionary<string, object?>.Empty;
 }

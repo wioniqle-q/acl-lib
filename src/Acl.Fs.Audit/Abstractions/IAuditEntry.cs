@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 namespace Acl.Fs.Audit.Abstractions;
 
 internal interface IAuditEntry
@@ -6,5 +8,5 @@ internal interface IAuditEntry
     string Category { get; }
     string Message { get; }
     int EventId { get; }
-    IReadOnlyDictionary<string, object?> DiagnosticContext { get; }
+    FrozenDictionary<string, object?> DiagnosticContext { get; }
 }
