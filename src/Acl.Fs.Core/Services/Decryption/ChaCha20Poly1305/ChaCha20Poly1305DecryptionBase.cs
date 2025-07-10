@@ -56,9 +56,9 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
-        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var sourceStream = StreamHelper.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
-            CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            StreamHelper.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.InputStreamOpened,
@@ -303,7 +303,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         var isLastBlock = processedBytes + bytesRead >= originalSize;
         var blockSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
-        CryptographicUtilities.DeriveNonce(salt, blockIndex, chunkNonce);
+        CryptoHelper.DeriveNonce(salt, blockIndex, chunkNonce);
 
         DecryptBlock(chaCha20Poly1305, buffer, plaintext, tag, chunkNonce, blockSize, blockIndex, salt);
 

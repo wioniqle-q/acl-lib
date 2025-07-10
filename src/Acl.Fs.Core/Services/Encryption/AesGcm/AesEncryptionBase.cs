@@ -54,9 +54,9 @@ internal sealed class AesEncryptionBase(
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
-        await using var sourceStream = CryptoUtilities.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var sourceStream = StreamHelper.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
-            CryptoUtilities.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            StreamHelper.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.InputStreamOpened,
@@ -149,7 +149,7 @@ internal sealed class AesEncryptionBase(
     private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer,
         int metadataBufferSize)
     {
-        CryptographicUtilities.PrecomputeSalt(nonce, salt);
+        CryptoHelper.PrecomputeSalt(nonce, salt);
 
         metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
 
@@ -244,7 +244,7 @@ internal sealed class AesEncryptionBase(
 
             if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
-            CryptographicUtilities.DeriveNonce(salt, blockIndex, chunkNonce);
+            CryptoHelper.DeriveNonce(salt, blockIndex, chunkNonce);
 
             EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize);
 

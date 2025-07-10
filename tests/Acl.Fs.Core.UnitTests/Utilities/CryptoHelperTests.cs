@@ -4,7 +4,7 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.UnitTests.Utilities;
 
-public sealed class CryptographicUtilitiesTests
+public sealed class CryptoHelperTests
 {
     [Fact]
     public void PrecomputeSalt_ValidInputs_GeneratesSalt()
@@ -13,7 +13,7 @@ public sealed class CryptographicUtilitiesTests
         var salt = new byte[SaltSize];
         RandomNumberGenerator.Fill(originalNonce);
 
-        CryptographicUtilities.PrecomputeSalt(originalNonce, salt);
+        CryptoHelper.PrecomputeSalt(originalNonce, salt);
 
         Assert.NotNull(salt);
         Assert.Equal(SaltSize, salt.Length);
@@ -30,8 +30,8 @@ public sealed class CryptographicUtilitiesTests
         var salt1 = new byte[SaltSize];
         var salt2 = new byte[SaltSize];
 
-        CryptographicUtilities.PrecomputeSalt(originalNonce, salt1);
-        CryptographicUtilities.PrecomputeSalt(originalNonce, salt2);
+        CryptoHelper.PrecomputeSalt(originalNonce, salt1);
+        CryptoHelper.PrecomputeSalt(originalNonce, salt2);
 
         Assert.Equal(salt1, salt2);
     }
@@ -47,8 +47,8 @@ public sealed class CryptographicUtilitiesTests
         var salt1 = new byte[SaltSize];
         var salt2 = new byte[SaltSize];
 
-        CryptographicUtilities.PrecomputeSalt(originalNonce1, salt1);
-        CryptographicUtilities.PrecomputeSalt(originalNonce2, salt2);
+        CryptoHelper.PrecomputeSalt(originalNonce1, salt1);
+        CryptoHelper.PrecomputeSalt(originalNonce2, salt2);
 
 
         Assert.NotEqual(salt1, salt2);
@@ -65,7 +65,7 @@ public sealed class CryptographicUtilitiesTests
         var salt = new byte[SaltSize];
         RandomNumberGenerator.Fill(originalNonce);
 
-        var exception = Record.Exception(() => CryptographicUtilities.PrecomputeSalt(originalNonce, salt));
+        var exception = Record.Exception(() => CryptoHelper.PrecomputeSalt(originalNonce, salt));
         Assert.Null(exception);
         Assert.False(IsAllZeros(salt));
     }
@@ -79,7 +79,7 @@ public sealed class CryptographicUtilitiesTests
         var outputNonce = new byte[NonceSize];
         RandomNumberGenerator.Fill(salt);
 
-        CryptographicUtilities.DeriveNonce(salt, blockIndex, outputNonce);
+        CryptoHelper.DeriveNonce(salt, blockIndex, outputNonce);
 
         Assert.NotNull(outputNonce);
         Assert.Equal(NonceSize, outputNonce.Length);
@@ -98,8 +98,8 @@ public sealed class CryptographicUtilitiesTests
         var outputNonce2 = new byte[NonceSize];
 
 
-        CryptographicUtilities.DeriveNonce(salt, blockIndex, outputNonce1);
-        CryptographicUtilities.DeriveNonce(salt, blockIndex, outputNonce2);
+        CryptoHelper.DeriveNonce(salt, blockIndex, outputNonce1);
+        CryptoHelper.DeriveNonce(salt, blockIndex, outputNonce2);
 
 
         Assert.Equal(outputNonce1, outputNonce2);
@@ -114,8 +114,8 @@ public sealed class CryptographicUtilitiesTests
         var outputNonce1 = new byte[NonceSize];
         var outputNonce2 = new byte[NonceSize];
 
-        CryptographicUtilities.DeriveNonce(salt, 1, outputNonce1);
-        CryptographicUtilities.DeriveNonce(salt, 2, outputNonce2);
+        CryptoHelper.DeriveNonce(salt, 1, outputNonce1);
+        CryptoHelper.DeriveNonce(salt, 2, outputNonce2);
 
         Assert.NotEqual(outputNonce1, outputNonce2);
     }
@@ -133,8 +133,8 @@ public sealed class CryptographicUtilitiesTests
         var outputNonce2 = new byte[NonceSize];
 
 
-        CryptographicUtilities.DeriveNonce(salt1, blockIndex, outputNonce1);
-        CryptographicUtilities.DeriveNonce(salt2, blockIndex, outputNonce2);
+        CryptoHelper.DeriveNonce(salt1, blockIndex, outputNonce1);
+        CryptoHelper.DeriveNonce(salt2, blockIndex, outputNonce2);
 
 
         Assert.NotEqual(outputNonce1, outputNonce2);
@@ -151,7 +151,7 @@ public sealed class CryptographicUtilitiesTests
         var outputNonce = new byte[NonceSize];
         RandomNumberGenerator.Fill(salt);
 
-        var exception = Record.Exception(() => CryptographicUtilities.DeriveNonce(salt, blockIndex, outputNonce));
+        var exception = Record.Exception(() => CryptoHelper.DeriveNonce(salt, blockIndex, outputNonce));
         Assert.Null(exception);
         Assert.False(IsAllZeros(outputNonce));
     }
@@ -169,7 +169,7 @@ public sealed class CryptographicUtilitiesTests
         for (long i = 0; i < numNonces; i++)
         {
             var outputNonce = new byte[NonceSize];
-            CryptographicUtilities.DeriveNonce(salt, i, outputNonce);
+            CryptoHelper.DeriveNonce(salt, i, outputNonce);
             nonces.Add(outputNonce);
         }
 
@@ -185,7 +185,7 @@ public sealed class CryptographicUtilitiesTests
         var emptyNonce = Array.Empty<byte>();
         var salt = new byte[SaltSize];
 
-        var exception = Record.Exception(() => CryptographicUtilities.PrecomputeSalt(emptyNonce, salt));
+        var exception = Record.Exception(() => CryptoHelper.PrecomputeSalt(emptyNonce, salt));
 
         Assert.Null(exception);
         Assert.False(IsAllZeros(salt));
@@ -197,7 +197,7 @@ public sealed class CryptographicUtilitiesTests
         var emptySalt = Array.Empty<byte>();
         var outputNonce = new byte[NonceSize];
 
-        var exception = Record.Exception(() => CryptographicUtilities.DeriveNonce(emptySalt, 1, outputNonce));
+        var exception = Record.Exception(() => CryptoHelper.DeriveNonce(emptySalt, 1, outputNonce));
 
         Assert.True(exception is null or CryptographicException);
     }
@@ -209,7 +209,7 @@ public sealed class CryptographicUtilitiesTests
         var wrongSizeSalt = new byte[16];
         RandomNumberGenerator.Fill(originalNonce);
 
-        var exception = Record.Exception(() => CryptographicUtilities.PrecomputeSalt(originalNonce, wrongSizeSalt));
+        var exception = Record.Exception(() => CryptoHelper.PrecomputeSalt(originalNonce, wrongSizeSalt));
 
         Assert.NotNull(exception);
         Assert.IsType<CryptographicException>(exception);
@@ -222,7 +222,7 @@ public sealed class CryptographicUtilitiesTests
         var wrongSizeNonce = new byte[8];
         RandomNumberGenerator.Fill(salt);
 
-        var exception = Record.Exception(() => CryptographicUtilities.DeriveNonce(salt, 1, wrongSizeNonce));
+        var exception = Record.Exception(() => CryptoHelper.DeriveNonce(salt, 1, wrongSizeNonce));
         Assert.NotNull(exception);
         Assert.IsType<CryptographicException>(exception);
     }
@@ -234,12 +234,12 @@ public sealed class CryptographicUtilitiesTests
         RandomNumberGenerator.Fill(masterKey);
 
         var salt = new byte[SaltSize];
-        CryptographicUtilities.PrecomputeSalt(masterKey, salt);
+        CryptoHelper.PrecomputeSalt(masterKey, salt);
 
         var nonce1 = new byte[NonceSize];
         var nonce2 = new byte[NonceSize];
-        CryptographicUtilities.DeriveNonce(salt, 0, nonce1);
-        CryptographicUtilities.DeriveNonce(salt, 1, nonce2);
+        CryptoHelper.DeriveNonce(salt, 0, nonce1);
+        CryptoHelper.DeriveNonce(salt, 1, nonce2);
 
         Assert.False(IsAllZeros(salt));
         Assert.False(IsAllZeros(nonce1));
@@ -247,7 +247,7 @@ public sealed class CryptographicUtilitiesTests
         Assert.NotEqual(nonce1, nonce2);
 
         var salt2 = new byte[SaltSize];
-        CryptographicUtilities.PrecomputeSalt(masterKey, salt2);
+        CryptoHelper.PrecomputeSalt(masterKey, salt2);
         Assert.Equal(salt, salt2);
     }
 

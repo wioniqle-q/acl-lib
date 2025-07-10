@@ -10,7 +10,7 @@ internal sealed class AlignedPolicy : IAlignmentPolicy
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int CalculateProcessingSize(int bytesRead, bool isLastBlock)
     {
-        return CryptoUtilities.CalculateAlignedSize(bytesRead, isLastBlock);
+        return StreamHelper.CalculateAlignedSize(bytesRead, isLastBlock);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
