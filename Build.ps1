@@ -19,7 +19,8 @@ $SourceProjects = @(
     "src\Acl.Fs.Abstractions\Acl.Fs.Abstractions.csproj",
     "src\Acl.Fs.Core\Acl.Fs.Core.csproj",
     "src\Acl.Fs.Stream\Acl.Fs.Stream.csproj",
-    "src\Acl.Fs.Native\Acl.Fs.Native.csproj"
+    "src\Acl.Fs.Native\Acl.Fs.Native.csproj",
+    "src\Acl.Fs.Audit\Acl.Fs.Audit.csproj"
 )
 $TestProjects = @(
     "tests\Acl.Fs.Core.UnitTests\Acl.Fs.Core.UnitTests.csproj",
