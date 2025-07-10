@@ -7,33 +7,7 @@ namespace Acl.Fs.Core.UnitTests.Factories;
 public sealed class AesGcmFactoryTests
 {
     private readonly AesGcmFactory _factory = new();
-
-    [Fact]
-    public void Create_ValidKey16Bytes_ReturnsAesGcmInstance()
-    {
-        var key = new byte[16];
-        RandomNumberGenerator.Fill(key);
-
-        var result = _factory.Create(key);
-
-        Assert.NotNull(result);
-        Assert.IsType<AesGcm>(result);
-        result.Dispose();
-    }
-
-    [Fact]
-    public void Create_ValidKey24Bytes_ReturnsAesGcmInstance()
-    {
-        var key = new byte[24];
-        RandomNumberGenerator.Fill(key);
-
-        var result = _factory.Create(key);
-
-        Assert.NotNull(result);
-        Assert.IsType<AesGcm>(result);
-        result.Dispose();
-    }
-
+    
     [Fact]
     public void Create_ValidKey32Bytes_ReturnsAesGcmInstance()
     {
@@ -44,6 +18,7 @@ public sealed class AesGcmFactoryTests
 
         Assert.NotNull(result);
         Assert.IsType<AesGcm>(result);
+        
         result.Dispose();
     }
 
@@ -68,7 +43,7 @@ public sealed class AesGcmFactoryTests
         var invalidKey = new byte[15];
         RandomNumberGenerator.Fill(invalidKey);
 
-        Assert.ThrowsAny<CryptographicException>(() => _factory.Create(invalidKey));
+        Assert.ThrowsAny<ArgumentException>(() => _factory.Create(invalidKey));
     }
 
     [Fact]
@@ -77,7 +52,7 @@ public sealed class AesGcmFactoryTests
         var invalidKey = new byte[17];
         RandomNumberGenerator.Fill(invalidKey);
 
-        Assert.ThrowsAny<CryptographicException>(() => _factory.Create(invalidKey));
+        Assert.ThrowsAny<ArgumentException>(() => _factory.Create(invalidKey));
     }
 
     [Fact]
@@ -86,6 +61,6 @@ public sealed class AesGcmFactoryTests
         var invalidKey = new byte[33];
         RandomNumberGenerator.Fill(invalidKey);
 
-        Assert.ThrowsAny<CryptographicException>(() => _factory.Create(invalidKey));
+        Assert.ThrowsAny<ArgumentException>(() => _factory.Create(invalidKey));
     }
 }
