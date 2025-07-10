@@ -5,7 +5,7 @@ using static Acl.Fs.Abstractions.Constants.KeyVaultConstants;
 
 namespace Acl.Fs.Core.Utilities;
 
-internal static class CryptoHelper
+internal static class CryptoOperations
 {
     internal static void PrecomputeSalt(byte[] originalNonce, byte[] salt)
     {

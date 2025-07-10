@@ -6,7 +6,7 @@ using static Acl.Fs.Abstractions.Constants.StorageConstants;
 
 namespace Acl.Fs.Core.Utilities;
 
-internal static class StreamHelper
+internal static class CryptoPrimitives
 {
     internal static System.IO.Stream CreateInputStream(string path, FileOptions fileOptions, ILogger logger)
     {

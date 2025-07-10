@@ -54,9 +54,9 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
-        await using var sourceStream = StreamHelper.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
-            StreamHelper.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.InputStreamOpened,
@@ -149,7 +149,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
     private static void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer,
         int metadataBufferSize)
     {
-        CryptoHelper.PrecomputeSalt(nonce, salt);
+        CryptoOperations.PrecomputeSalt(nonce, salt);
 
         metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
 
@@ -245,7 +245,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
 
             if (bytesRead < alignedSize) buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
-            CryptoHelper.DeriveNonce(salt, blockIndex, chunkNonce);
+            CryptoOperations.DeriveNonce(salt, blockIndex, chunkNonce);
 
             EncryptBlock(chaCha20Poly1305, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 

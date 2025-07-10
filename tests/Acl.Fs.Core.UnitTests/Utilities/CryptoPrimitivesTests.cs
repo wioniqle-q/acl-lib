@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Core.UnitTests.Utilities;
 
-public sealed class StreamHelperTests : IDisposable
+public sealed class CryptoPrimitivesTests : IDisposable
 {
     private static readonly FileOptions DefaultFileOptions =
         FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.WriteThrough;
@@ -12,7 +12,7 @@ public sealed class StreamHelperTests : IDisposable
     private readonly string _tempDirectory;
     private readonly List<string> _tempFiles;
 
-    public StreamHelperTests()
+    public CryptoPrimitivesTests()
     {
         _logger = new TestLogger();
         _tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -39,7 +39,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         var tempFile = CreateTempFile("test content");
 
-        using var stream = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream);
         Assert.True(stream.CanRead);
@@ -54,7 +54,7 @@ public sealed class StreamHelperTests : IDisposable
 
         var tempFile = CreateTempFile(testContent);
 
-        using var stream = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         using var reader = new StreamReader(stream);
         var content = reader.ReadToEnd();
 
@@ -68,7 +68,7 @@ public sealed class StreamHelperTests : IDisposable
         var nonExistentPath = Path.Combine(_tempDirectory, "nonexistent.txt");
 
         Assert.ThrowsAny<Exception>(() =>
-            StreamHelper.CreateInputStream(nonExistentPath, DefaultFileOptions, _logger));
+            CryptoPrimitives.CreateInputStream(nonExistentPath, DefaultFileOptions, _logger));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream = StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream);
         Assert.True(stream.CanWrite);
@@ -89,7 +89,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using (var _ = StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
+        using (var _ = CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
         {
         }
 
@@ -102,7 +102,7 @@ public sealed class StreamHelperTests : IDisposable
         var outputPath = CreateTempFile("original content");
         var originalLength = new FileInfo(outputPath).Length;
 
-        using (StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
+        using (CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger))
         {
         }
 
@@ -117,7 +117,7 @@ public sealed class StreamHelperTests : IDisposable
 
         var exception = Record.Exception(() =>
         {
-            using var stream = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+            using var stream = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         });
 
         Assert.Null(exception);
@@ -130,7 +130,7 @@ public sealed class StreamHelperTests : IDisposable
 
         var exception = Record.Exception(() =>
         {
-            using var stream = StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
+            using var stream = CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
         });
 
         Assert.Null(exception);
@@ -142,7 +142,7 @@ public sealed class StreamHelperTests : IDisposable
         var largeContent = new string('X', 5000);
         var tempFile = CreateTempFile(largeContent);
 
-        using var stream = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
         using var reader = new StreamReader(stream);
         var content = reader.ReadToEnd();
 
@@ -156,7 +156,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         var tempFile = CreateTempFile("test");
 
-        using var stream = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.True(stream.CanRead);
         Assert.False(stream.CanWrite);
@@ -167,7 +167,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream = StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
+        using var stream = CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
         Assert.True(stream.CanWrite);
         Assert.False(stream.CanRead);
@@ -179,8 +179,8 @@ public sealed class StreamHelperTests : IDisposable
     {
         var tempFile = CreateTempFile("shared content");
 
-        using var stream1 = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
-        using var stream2 = StreamHelper.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream1 = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
+        using var stream2 = CryptoPrimitives.CreateInputStream(tempFile, DefaultFileOptions, _logger);
 
         Assert.NotNull(stream1);
         Assert.NotNull(stream2);
@@ -193,9 +193,9 @@ public sealed class StreamHelperTests : IDisposable
     {
         var outputPath = GetTempFilePath();
 
-        using var stream1 = StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
+        using var stream1 = CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger);
 
-        Assert.ThrowsAny<Exception>(() => StreamHelper.CreateOutputStream(outputPath, DefaultFileOptions, _logger));
+        Assert.ThrowsAny<Exception>(() => CryptoPrimitives.CreateOutputStream(outputPath, DefaultFileOptions, _logger));
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public sealed class StreamHelperTests : IDisposable
         const bool isLastBlock = true;
         const int expectedAligned = 512;
 
-        var result = StreamHelper.CalculateAlignedSize(bytesRead, isLastBlock);
+        var result = CryptoPrimitives.CalculateAlignedSize(bytesRead, isLastBlock);
 
         Assert.Equal(expectedAligned, result);
     }
@@ -216,7 +216,7 @@ public sealed class StreamHelperTests : IDisposable
         const int bytesRead = 300;
         const bool isLastBlock = false;
 
-        var result = StreamHelper.CalculateAlignedSize(bytesRead, isLastBlock);
+        var result = CryptoPrimitives.CalculateAlignedSize(bytesRead, isLastBlock);
 
         Assert.Equal(bytesRead, result);
     }
@@ -227,7 +227,7 @@ public sealed class StreamHelperTests : IDisposable
         const int bytesRead = 512;
         const bool isLastBlock = true;
 
-        var result = StreamHelper.CalculateAlignedSize(bytesRead, isLastBlock);
+        var result = CryptoPrimitives.CalculateAlignedSize(bytesRead, isLastBlock);
 
         Assert.Equal(bytesRead, result);
     }
@@ -238,7 +238,7 @@ public sealed class StreamHelperTests : IDisposable
         const int bytesRead = 300;
         const int expectedAligned = 512;
 
-        var result = StreamHelper.CalculateAlignedSize(bytesRead);
+        var result = CryptoPrimitives.CalculateAlignedSize(bytesRead);
 
         Assert.Equal(expectedAligned, result);
     }
@@ -248,7 +248,7 @@ public sealed class StreamHelperTests : IDisposable
     {
         const int bytesRead = 512;
 
-        var result = StreamHelper.CalculateAlignedSize(bytesRead);
+        var result = CryptoPrimitives.CalculateAlignedSize(bytesRead);
 
         Assert.Equal(bytesRead, result);
     }
@@ -264,7 +264,7 @@ public sealed class StreamHelperTests : IDisposable
     [InlineData(1025, 1536)]
     public void CalculateAlignedSize_SingleParameter_VariousInputs_ReturnsCorrectAlignment(int input, int expected)
     {
-        var result = StreamHelper.CalculateAlignedSize(input);
+        var result = CryptoPrimitives.CalculateAlignedSize(input);
 
         Assert.Equal(expected, result);
     }
@@ -281,7 +281,7 @@ public sealed class StreamHelperTests : IDisposable
     public void CalculateAlignedSize_WithIsLastBlock_VariousInputs_ReturnsCorrectResult(int input, bool isLastBlock,
         int expected)
     {
-        var result = StreamHelper.CalculateAlignedSize(input, isLastBlock);
+        var result = CryptoPrimitives.CalculateAlignedSize(input, isLastBlock);
 
         Assert.Equal(expected, result);
     }
@@ -289,9 +289,9 @@ public sealed class StreamHelperTests : IDisposable
     [Fact]
     public void CalculateAlignedSize_Zero_ReturnsZero()
     {
-        Assert.Equal(0, StreamHelper.CalculateAlignedSize(0));
-        Assert.Equal(0, StreamHelper.CalculateAlignedSize(0, true));
-        Assert.Equal(0, StreamHelper.CalculateAlignedSize(0, false));
+        Assert.Equal(0, CryptoPrimitives.CalculateAlignedSize(0));
+        Assert.Equal(0, CryptoPrimitives.CalculateAlignedSize(0, true));
+        Assert.Equal(0, CryptoPrimitives.CalculateAlignedSize(0, false));
     }
 
     private string CreateTempFile(string content = "")

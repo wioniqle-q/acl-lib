@@ -55,9 +55,9 @@ internal sealed class AesDecryptionBase(
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
 
-        await using var sourceStream = StreamHelper.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+        await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
         await using var destinationStream =
-            StreamHelper.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
 
         await _auditLogger.AuditAsync(AuditCategory.FileAccess,
             AuditMessages.InputStreamOpened,
@@ -304,7 +304,7 @@ internal sealed class AesDecryptionBase(
         var isLastBlock = processedBytes + bytesRead >= originalSize;
         var blockSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
-        CryptoHelper.DeriveNonce(salt, blockIndex, chunkNonce);
+        CryptoOperations.DeriveNonce(salt, blockIndex, chunkNonce);
 
         DecryptBlock(aesGcm, buffer, plaintext, tag, chunkNonce, blockSize);
 
