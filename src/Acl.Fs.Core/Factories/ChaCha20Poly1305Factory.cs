@@ -10,7 +10,7 @@ internal sealed class ChaCha20Poly1305Factory : IChaCha20Poly1305Factory
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
 
-        if (key.Length is 0 or not 32)
+        if (key.Length is not 32)
             throw new ArgumentException(ErrorMessages.InvalidKeySize, nameof(key));
 
         return new ChaCha20Poly1305(key);
