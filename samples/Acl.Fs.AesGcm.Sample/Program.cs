@@ -221,7 +221,7 @@ internal static class Program
         var serviceProvider = new ServiceCollection()
             .AddAclFsCore()
             .AddAuditLogger()
-            .AddChaCha20Poly1305Services()
+            .AddAesGcmServices()
             .AddLogging(configure =>
             {
                 configure.AddSerilog(Log.Logger, dispose: true);
@@ -232,7 +232,7 @@ internal static class Program
         {
             Path.Combine(@"", "")
         }.Where(File.Exists).ToArray();
-
+        
         if (sourceFilePaths.Length is 0)
         {
             Console.WriteLine("No valid files found to process.");

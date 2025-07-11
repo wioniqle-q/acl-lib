@@ -197,14 +197,29 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
         CancellationToken cancellationToken)
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
+        var totalBytesRead = 0; 
 
         for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
-            var bytesRead = await sourceStream.ReadAsync(
-                buffer.AsMemory(0, BufferSize),
-                cancellationToken);
+            int bytesRead;
+            var isLastBlock = blockIndex == totalBlocks - 1;
+
+            if (isLastBlock)
+            {
+                bytesRead = await sourceStream.ReadAsync(
+                    buffer.AsMemory(0, BufferSize),
+                    cancellationToken);
+            }
+            else
+            {
+                await sourceStream.ReadExactlyAsync(
+                    buffer.AsMemory(0, BufferSize),
+                    cancellationToken);
+                bytesRead = BufferSize;
+            }
 
             if (bytesRead is 0) break;
+            totalBytesRead += bytesRead;
 
             await EncryptAndWriteBlockAsync(
                 destinationStream,
@@ -220,6 +235,25 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
                 totalBlocks,
                 metadataBufferSize,
                 cancellationToken);
+        }
+        
+        if (totalBytesRead != sourceStream.Length)
+        {
+            var errorMessage = string.Format(AuditMessages.ConsistencyError, totalBytesRead, sourceStream.Length, (sourceStream as FileStream)?.Name ?? "?");
+            var auditError = string.Format(AuditMessages.ConsistencyErrorAudit, totalBytesRead, sourceStream.Length, (sourceStream as FileStream)?.Name ?? "?");
+            
+            await _auditLogger.AuditAsync(
+                AuditCategory.CryptoIntegrity,
+                auditError,
+                AuditEventIds.BlockEncryptionFailed,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.TotalBytesRead, totalBytesRead },
+                    { AuditMessages.ContextKeys.StreamLength, sourceStream.Length },
+                }.ToFrozenDictionary(),
+                cancellationToken);
+            
+            throw new InvalidOperationException(errorMessage);
         }
     }
 
