@@ -53,29 +53,7 @@ internal sealed class AesEncryptionBase(
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
-
-        await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
-        await using var destinationStream =
-            CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.InputStreamOpened,
-            AuditEventIds.EncryptionInputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.OutputStreamOpened,
-            AuditEventIds.EncryptionOutputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        using var aesGcm = _aesGcmFactory.Create(key);
-
+        
         var buffer = CryptoPool.Rent(BufferSize);
         var ciphertext = CryptoPool.Rent(BufferSize);
         var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
@@ -85,6 +63,29 @@ internal sealed class AesEncryptionBase(
 
         try
         {
+            using var aesGcm = _aesGcmFactory.Create(key);
+
+            await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.InputStreamOpened,
+                AuditEventIds.EncryptionInputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+                }.ToFrozenDictionary(), cancellationToken);
+
+            await using var destinationStream =
+                CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.OutputStreamOpened,
+                AuditEventIds.EncryptionOutputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+                }.ToFrozenDictionary(), cancellationToken);
+            
             PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
 
             await _auditLogger.AuditAsync(AuditCategory.Header,

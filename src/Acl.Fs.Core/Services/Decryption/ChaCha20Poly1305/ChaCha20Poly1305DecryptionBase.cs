@@ -38,7 +38,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
     private readonly IFileVersionValidator _versionValidator =
         versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
-
+    
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
         byte[] key,
@@ -53,45 +53,8 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             {
                 { AuditMessages.ContextKeys.Algorithm, "ChaCha20Poly1305" }
             }.ToFrozenDictionary(), cancellationToken);
-
+        
         var fileOptions = _alignmentPolicy.GetFileOptions();
-
-        await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
-        await using var destinationStream =
-            CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.InputStreamOpened,
-            AuditEventIds.DecryptionInputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.OutputStreamOpened,
-            AuditEventIds.DecryptionOutputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        await ExecuteDecryptionProcessAsync(
-            key,
-            sourceStream,
-            destinationStream,
-            cancellationToken);
-    }
-
-    private async Task ExecuteDecryptionProcessAsync(
-        byte[] key,
-        System.IO.Stream sourceStream,
-        System.IO.Stream destinationStream,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
         var buffer = CryptoPool.Rent(BufferSize);
@@ -104,6 +67,29 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
         try
         {
+            using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
+        
+            await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+            
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.InputStreamOpened,
+                AuditEventIds.DecryptionInputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+                }.ToFrozenDictionary(), cancellationToken);
+            
+            await using var destinationStream =
+                CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.OutputStreamOpened,
+                AuditEventIds.DecryptionOutputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+                }.ToFrozenDictionary(), cancellationToken);
+
             var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, metadataBufferSize,
                 cancellationToken);
 

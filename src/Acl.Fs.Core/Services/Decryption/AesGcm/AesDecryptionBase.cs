@@ -54,48 +54,11 @@ internal sealed class AesDecryptionBase(
             }.ToFrozenDictionary(), cancellationToken);
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
-
-        await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
-        await using var destinationStream =
-            CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.InputStreamOpened,
-            AuditEventIds.DecryptionInputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        await _auditLogger.AuditAsync(AuditCategory.FileAccess,
-            AuditMessages.OutputStreamOpened,
-            AuditEventIds.DecryptionOutputOpened,
-            new Dictionary<string, object?>
-            {
-                { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
-            }.ToFrozenDictionary(), cancellationToken);
-
-        await ExecuteDecryptionProcessAsync(
-            key,
-            sourceStream,
-            destinationStream,
-            cancellationToken);
-    }
-
-    private async Task ExecuteDecryptionProcessAsync(
-        byte[] key,
-        System.IO.Stream sourceStream,
-        System.IO.Stream destinationStream,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        using var aesGcm = _aesGcmFactory.Create(key);
-
+        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+        
         var buffer = CryptoPool.Rent(BufferSize);
         var plaintext = CryptoPool.Rent(BufferSize);
         var alignedBuffer = CryptoPool.Rent(BufferSize);
-        var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
         var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
         var tag = CryptoPool.Rent(TagSize);
         var chunkNonce = CryptoPool.Rent(NonceSize);
@@ -103,6 +66,29 @@ internal sealed class AesDecryptionBase(
 
         try
         {
+            using var aesGcm = _aesGcmFactory.Create(key);
+            
+            await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+            
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.InputStreamOpened,
+                AuditEventIds.DecryptionInputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
+                }.ToFrozenDictionary(), cancellationToken);
+
+            await using var destinationStream =
+                CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
+            
+            await _auditLogger.AuditAsync(AuditCategory.FileAccess,
+                AuditMessages.OutputStreamOpened,
+                AuditEventIds.DecryptionOutputOpened,
+                new Dictionary<string, object?>
+                {
+                    { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
+                }.ToFrozenDictionary(), cancellationToken);
+            
             var originalSize = await ReadHeaderAsync(sourceStream, metadataBuffer, salt, metadataBufferSize,
                 cancellationToken);
 
