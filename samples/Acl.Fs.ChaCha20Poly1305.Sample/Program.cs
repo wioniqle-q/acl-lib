@@ -9,7 +9,6 @@ using Acl.Fs.Core.Interfaces.Encryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Models.ChaCha20Poly1305;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Acl.Fs.ChaCha20Poly1305.Sample;
@@ -155,7 +154,7 @@ internal static class Program
             var decryptedFilePath = Path.Combine(directory, $"chacha20_decrypted_{fileName}{fileExtension}");
 
             var fileId = Guid.NewGuid().ToString();
-            var encryptInstruction = new FileTransferInstruction(fileId, sourceFilePath, encryptedFilePath);
+            var encryptInstruction = new FileTransferInstruction(sourceFilePath, encryptedFilePath);
 
             Console.WriteLine(
                 $"[{Thread.CurrentThread.ManagedThreadId}] Processing {fileInfo.Name} ({fileInfo.Length:N0} bytes) with ChaCha20Poly1305...");
@@ -172,12 +171,12 @@ internal static class Program
                 encryptionStopwatch.Stop();
 
                 Console.WriteLine(
-                    $"[{Thread.CurrentThread.ManagedThreadId}] ChaCha20Poly1305 encrypted {fileInfo.Name} in {encryptionStopwatch.ElapsedMilliseconds}ms");
+                    $"[{Environment.CurrentManagedThreadId}] ChaCha20Poly1305 encrypted {fileInfo.Name} in {encryptionStopwatch.ElapsedMilliseconds}ms");
 
                 var retrievedKey = await vaultService.RetrieveEncryptionKeyAsync(fileId, masterPublicKey);
                 try
                 {
-                    var decryptInstruction = new FileTransferInstruction(fileId, encryptedFilePath, decryptedFilePath);
+                    var decryptInstruction = new FileTransferInstruction(encryptedFilePath, decryptedFilePath);
                     var decryptionInput = new ChaCha20Poly1305DecryptionInput(retrievedKey);
 
                     var decryptionStopwatch = Stopwatch.StartNew();
@@ -185,7 +184,7 @@ internal static class Program
                     decryptionStopwatch.Stop();
 
                     Console.WriteLine(
-                        $"[{Thread.CurrentThread.ManagedThreadId}] ChaCha20Poly1305 decrypted {fileInfo.Name} in {decryptionStopwatch.ElapsedMilliseconds}ms");
+                        $"[{Environment.CurrentManagedThreadId}] ChaCha20Poly1305 decrypted {fileInfo.Name} in {decryptionStopwatch.ElapsedMilliseconds}ms");
                     return true;
                 }
                 finally
@@ -306,7 +305,7 @@ internal static class Program
         finally
         {
             await serviceProvider.DisposeAsync();
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
         }
 
         Console.WriteLine("\nChaCha20Poly1305 processing completed. Press any key to exit.");

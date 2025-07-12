@@ -48,7 +48,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationToken = CancellationToken.None;
@@ -72,7 +71,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationTokenSource = new CancellationTokenSource();
@@ -90,7 +88,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationToken = CancellationToken.None;
@@ -116,7 +113,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationToken = CancellationToken.None;
@@ -140,7 +136,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationToken = CancellationToken.None;
@@ -163,7 +158,6 @@ public class AesDecryptionServiceTests
 
         var decryptionInput = new AesDecryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "encrypted.txt"),
             GetValidPathForCurrentOs("destination", "decrypted.txt"));
         var cancellationToken = CancellationToken.None;

@@ -9,7 +9,6 @@ using Acl.Fs.Core.Interfaces.Encryption.AesGcm;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Models.AesGcm;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Acl.Fs.AesGcm.Sample;
@@ -151,7 +150,7 @@ internal static class Program
             var decryptedFilePath = Path.Combine(directory, $"decrypted_{fileName}{fileExtension}");
 
             var fileId = Guid.NewGuid().ToString();
-            var encryptInstruction = new FileTransferInstruction(fileId, sourceFilePath, encryptedFilePath);
+            var encryptInstruction = new FileTransferInstruction(sourceFilePath, encryptedFilePath);
 
             Console.WriteLine(
                 $"[{Thread.CurrentThread.ManagedThreadId}] Processing {fileInfo.Name} ({fileInfo.Length:N0} bytes)...");
@@ -168,12 +167,12 @@ internal static class Program
                 encryptionStopwatch.Stop();
 
                 Console.WriteLine(
-                    $"[{Thread.CurrentThread.ManagedThreadId}] Encrypted {fileInfo.Name} in {encryptionStopwatch.ElapsedMilliseconds}ms");
+                    $"[{Environment.CurrentManagedThreadId}] Encrypted {fileInfo.Name} in {encryptionStopwatch.ElapsedMilliseconds}ms");
 
                 var retrievedKey = await vaultService.RetrieveEncryptionKeyAsync(fileId, masterPublicKey);
                 try
                 {
-                    var decryptInstruction = new FileTransferInstruction(fileId, encryptedFilePath, decryptedFilePath);
+                    var decryptInstruction = new FileTransferInstruction(encryptedFilePath, decryptedFilePath);
                     var decryptionInput = new AesDecryptionInput(retrievedKey);
 
                     var decryptionStopwatch = Stopwatch.StartNew();
@@ -181,7 +180,7 @@ internal static class Program
                     decryptionStopwatch.Stop();
 
                     Console.WriteLine(
-                        $"[{Thread.CurrentThread.ManagedThreadId}] Decrypted {fileInfo.Name} in {decryptionStopwatch.ElapsedMilliseconds}ms");
+                        $"[{Environment.CurrentManagedThreadId}] Decrypted {fileInfo.Name} in {decryptionStopwatch.ElapsedMilliseconds}ms");
                     return true;
                 }
                 finally
@@ -301,7 +300,7 @@ internal static class Program
         finally
         {
             await serviceProvider.DisposeAsync();
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
         }
 
         Console.WriteLine("\nProcessing completed. Press any key to exit.");

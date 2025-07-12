@@ -49,7 +49,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -74,7 +73,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationTokenSource = new CancellationTokenSource();
@@ -92,7 +90,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -119,7 +116,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -144,7 +140,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -169,7 +164,6 @@ public class ChaCha20Poly1305EncryptionServiceTests
 
         var encryptionInput = new ChaCha20Poly1305EncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;

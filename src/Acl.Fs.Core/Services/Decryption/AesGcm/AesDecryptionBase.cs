@@ -230,7 +230,7 @@ internal sealed class AesDecryptionBase(
                 var bytesRead = await ReadBlockAsync(sourceStream, buffer, blockIndex, totalBlocks, cancellationToken);
                 if (bytesRead is 0)
                     break;
-                
+
                 await DecryptAndWriteBlockAsync(
                     destinationStream,
                     aesGcm,
@@ -371,7 +371,7 @@ internal sealed class AesDecryptionBase(
 
         destinationStream.SetLength(originalSize);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static async Task<int> ReadBlockAsync(
         System.IO.Stream sourceStream,

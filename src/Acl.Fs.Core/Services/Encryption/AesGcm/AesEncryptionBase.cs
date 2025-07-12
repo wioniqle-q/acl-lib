@@ -205,7 +205,7 @@ internal sealed class AesEncryptionBase(
             var bytesRead = await ReadBlockAsync(sourceStream, buffer, blockIndex, totalBlocks, cancellationToken);
             if (bytesRead is 0)
                 break;
-            
+
             totalBytesRead += bytesRead;
 
             await EncryptAndWriteBlockAsync(
@@ -340,7 +340,7 @@ internal sealed class AesEncryptionBase(
             ciphertext.AsMemory(0, alignedSize),
             cancellationToken);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static async Task<int> ReadBlockAsync(
         System.IO.Stream sourceStream,

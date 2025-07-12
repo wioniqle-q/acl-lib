@@ -18,23 +18,19 @@ public sealed partial record FileTransferInstruction
 
     private static readonly Regex ParentDirectoryRegex = DirectoryRegex();
 
-    public FileTransferInstruction(string fileId, string sourcePath, string destinationPath)
+    public FileTransferInstruction(string sourcePath, string destinationPath)
     {
-        FileId = fileId;
         SourcePath = sourcePath;
         DestinationPath = destinationPath;
 
         Validate();
     }
 
-    public string FileId { get; }
     public string SourcePath { get; }
     public string DestinationPath { get; }
 
     private void Validate()
     {
-        if (ValidateString(FileId.AsSpan()) is not true)
-            throw new ArgumentException(ErrorMessages.FileIdCannotBeNullOrEmpty, nameof(FileId));
         if (ValidatePath(SourcePath.AsSpan()) is not true)
             throw new ArgumentException(ErrorMessages.SourcePathCannotBeNullOrInvalid, nameof(SourcePath));
         if (ValidatePath(DestinationPath.AsSpan()) is not true)

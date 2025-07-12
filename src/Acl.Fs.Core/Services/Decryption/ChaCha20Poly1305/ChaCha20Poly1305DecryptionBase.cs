@@ -228,7 +228,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
                 var bytesRead = await ReadBlockAsync(sourceStream, buffer, blockIndex, totalBlocks, cancellationToken);
                 if (bytesRead is 0)
-                    break; 
+                    break;
 
                 await DecryptAndWriteBlockAsync(
                     destinationStream,
@@ -380,7 +380,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
         destinationStream.SetLength(originalSize);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static async Task<int> ReadBlockAsync(
         System.IO.Stream sourceStream,

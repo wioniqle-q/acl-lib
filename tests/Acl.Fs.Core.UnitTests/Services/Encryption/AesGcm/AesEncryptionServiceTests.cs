@@ -48,7 +48,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -73,7 +72,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationTokenSource = new CancellationTokenSource();
@@ -91,7 +89,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -118,7 +115,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -143,7 +139,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
@@ -168,7 +163,6 @@ public class AesEncryptionServiceTests
 
         var encryptionInput = new AesEncryptionInput(key);
         var transferInstruction = new FileTransferInstruction(
-            "test-file-id",
             GetValidPathForCurrentOs("source", "test.txt"),
             GetValidPathForCurrentOs("destination", "test.txt"));
         var cancellationToken = CancellationToken.None;
