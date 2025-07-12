@@ -22,13 +22,23 @@ internal static class AuditMessages
     internal const string DecryptionFailed = "Decryption failed";
     internal const string BlockDecryptionFailed = "Block decryption failed";
 
-    internal const string ConsistencyError = "Total read bytes ({0}) do not match file length (expected: {1}) for source file: {2}";
-    internal const string ConsistencyErrorAudit = "Total read bytes ({0}) do not match file length (expected: {1}) for source file: {2}";
+    internal const string ConsistencyError =
+        "Total read bytes ({0}) do not match file length (expected: {1}) for source file: {2}";
 
-    internal const string ProcessedBytesExceeded = "Processed bytes ({0}) exceeded the original file size ({1}). Data corruption or logic error.";
-    internal const string NegativeBytesToWrite = "Negative bytesToWrite value detected: {0}. Data corruption or logic error.";
-    internal const string WrittenMoreBytesThanIntended = "Written more bytes ({0}) than intended file size ({1}). Data corruption or logic error.";
-    internal const string BlockSizeExceedsPlaintextBuffer = "Block size ({0}) exceeds plaintext buffer length ({1}). Data corruption or logic error.";
+    internal const string ConsistencyErrorAudit =
+        "Total read bytes ({0}) do not match file length (expected: {1}) for source file: {2}";
+
+    internal const string ProcessedBytesExceeded =
+        "Processed bytes ({0}) exceeded the original file size ({1}). Data corruption or logic error.";
+
+    internal const string NegativeBytesToWrite =
+        "Negative bytesToWrite value detected: {0}. Data corruption or logic error.";
+
+    internal const string WrittenMoreBytesThanIntended =
+        "Written more bytes ({0}) than intended file size ({1}). Data corruption or logic error.";
+
+    internal const string BlockSizeExceedsPlaintextBuffer =
+        "Block size ({0}) exceeds plaintext buffer length ({1}). Data corruption or logic error.";
 
     internal const string DecryptAndWriteBlockAsyncPrefix = "DecryptAndWriteBlockAsync: ";
     internal const string ProcessFileBlocksAsyncPrefix = "ProcessFileBlocksAsync: ";

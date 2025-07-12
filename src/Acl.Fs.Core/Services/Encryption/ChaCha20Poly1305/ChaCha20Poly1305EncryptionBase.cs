@@ -53,7 +53,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
 
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
-        
+
         var buffer = CryptoPool.Rent(BufferSize);
         var ciphertext = CryptoPool.Rent(BufferSize);
         var metadataBuffer = CryptoPool.Rent(metadataBufferSize);
@@ -65,7 +65,8 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
         {
             using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
 
-            await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+            await using var sourceStream =
+                CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
 
             await _auditLogger.AuditAsync(AuditCategory.FileAccess,
                 AuditMessages.InputStreamOpened,
@@ -77,7 +78,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
 
             await using var destinationStream =
                 CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
-            
+
             await _auditLogger.AuditAsync(AuditCategory.FileAccess,
                 AuditMessages.OutputStreamOpened,
                 AuditEventIds.EncryptionOutputOpened,
@@ -85,7 +86,7 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
                 {
                     { AuditMessages.ContextKeys.OutputFile, instruction.DestinationPath }
                 }.ToFrozenDictionary(), cancellationToken);
-            
+
             PrepareMetadata(nonce, sourceStream.Length, salt, metadataBuffer, metadataBufferSize);
 
             await _auditLogger.AuditAsync(AuditCategory.Header,
@@ -198,28 +199,14 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
         CancellationToken cancellationToken)
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
-        var totalBytesRead = 0; 
+        var totalBytesRead = 0;
 
         for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
-            int bytesRead;
-            var isLastBlock = blockIndex == totalBlocks - 1;
+            var bytesRead = await ReadBlockAsync(sourceStream, buffer, blockIndex, totalBlocks, cancellationToken);
+            if (bytesRead is 0)
+                break;
 
-            if (isLastBlock)
-            {
-                bytesRead = await sourceStream.ReadAsync(
-                    buffer.AsMemory(0, BufferSize),
-                    cancellationToken);
-            }
-            else
-            {
-                await sourceStream.ReadExactlyAsync(
-                    buffer.AsMemory(0, BufferSize),
-                    cancellationToken);
-                bytesRead = BufferSize;
-            }
-
-            if (bytesRead is 0) break;
             totalBytesRead += bytesRead;
 
             await EncryptAndWriteBlockAsync(
@@ -237,12 +224,14 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
                 metadataBufferSize,
                 cancellationToken);
         }
-        
+
         if (totalBytesRead != sourceStream.Length)
         {
-            var errorMessage = string.Format(AuditMessages.ConsistencyError, totalBytesRead, sourceStream.Length, (sourceStream as FileStream)?.Name ?? "?");
-            var auditError = string.Format(AuditMessages.ConsistencyErrorAudit, totalBytesRead, sourceStream.Length, (sourceStream as FileStream)?.Name ?? "?");
-            
+            var errorMessage = string.Format(AuditMessages.ConsistencyError, totalBytesRead, sourceStream.Length,
+                (sourceStream as FileStream)?.Name ?? "?");
+            var auditError = string.Format(AuditMessages.ConsistencyErrorAudit, totalBytesRead, sourceStream.Length,
+                (sourceStream as FileStream)?.Name ?? "?");
+
             await _auditLogger.AuditAsync(
                 AuditCategory.CryptoIntegrity,
                 auditError,
@@ -250,10 +239,10 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
                 new Dictionary<string, object?>
                 {
                     { AuditMessages.ContextKeys.TotalBytesRead, totalBytesRead },
-                    { AuditMessages.ContextKeys.StreamLength, sourceStream.Length },
+                    { AuditMessages.ContextKeys.StreamLength, sourceStream.Length }
                 }.ToFrozenDictionary(),
                 cancellationToken);
-            
+
             throw new InvalidOperationException(errorMessage);
         }
     }
@@ -362,5 +351,30 @@ internal sealed class ChaCha20Poly1305EncryptionBase(
         await destinationStream.WriteAsync(
             ciphertext.AsMemory(0, alignedSize),
             cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ReadBlockAsync(
+        System.IO.Stream sourceStream,
+        byte[] buffer,
+        long blockIndex,
+        long totalBlocks,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var isLastBlock = blockIndex == totalBlocks - 1;
+            if (isLastBlock)
+                return await sourceStream.ReadAsync(buffer.AsMemory(0, BufferSize), cancellationToken);
+
+            await sourceStream.ReadExactlyAsync(buffer.AsMemory(0, BufferSize), cancellationToken);
+            return BufferSize;
+        }
+        catch (EndOfStreamException)
+        {
+            return 0;
+        }
     }
 }

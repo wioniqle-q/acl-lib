@@ -38,7 +38,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
     private readonly IFileVersionValidator _versionValidator =
         versionValidator ?? throw new ArgumentNullException(nameof(versionValidator));
-    
+
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
         byte[] key,
@@ -53,7 +53,7 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
             {
                 { AuditMessages.ContextKeys.Algorithm, "ChaCha20Poly1305" }
             }.ToFrozenDictionary(), cancellationToken);
-        
+
         var fileOptions = _alignmentPolicy.GetFileOptions();
         var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
@@ -68,9 +68,10 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         try
         {
             using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
-        
-            await using var sourceStream = CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
-            
+
+            await using var sourceStream =
+                CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
+
             await _auditLogger.AuditAsync(AuditCategory.FileAccess,
                 AuditMessages.InputStreamOpened,
                 AuditEventIds.DecryptionInputOpened,
@@ -78,10 +79,10 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
                 {
                     { AuditMessages.ContextKeys.InputFile, instruction.SourcePath }
                 }.ToFrozenDictionary(), cancellationToken);
-            
+
             await using var destinationStream =
                 CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
-            
+
             await _auditLogger.AuditAsync(AuditCategory.FileAccess,
                 AuditMessages.OutputStreamOpened,
                 AuditEventIds.DecryptionOutputOpened,
@@ -225,22 +226,9 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
                         break;
                 }
 
-                int bytesRead;
-                var isLastBlock = blockIndex == totalBlocks - 1;
-
-                if (isLastBlock)
-                {
-                    bytesRead = await sourceStream.ReadAsync(
-                        buffer.AsMemory(0, BufferSize), cancellationToken);
-                }
-                else
-                {
-                    await sourceStream.ReadExactlyAsync(
-                        buffer.AsMemory(0, BufferSize), cancellationToken);
-                    bytesRead = BufferSize;
-                }
-
-                if (bytesRead is 0) break;
+                var bytesRead = await ReadBlockAsync(sourceStream, buffer, blockIndex, totalBlocks, cancellationToken);
+                if (bytesRead is 0)
+                    break; 
 
                 await DecryptAndWriteBlockAsync(
                     destinationStream,
@@ -259,16 +247,21 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
                 var available = originalSize - processedBytes;
                 if (available < 0)
-                    throw new InvalidOperationException(string.Format(AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.ProcessedBytesExceeded, processedBytes, originalSize));
+                    throw new InvalidOperationException(string.Format(
+                        AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.ProcessedBytesExceeded,
+                        processedBytes, originalSize));
 
                 var bytesToWrite = (int)Math.Min(bytesRead, available);
                 if (bytesToWrite < 0)
-                    throw new InvalidOperationException(string.Format(AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.NegativeBytesToWrite, bytesToWrite));
+                    throw new InvalidOperationException(string.Format(
+                        AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.NegativeBytesToWrite, bytesToWrite));
 
                 processedBytes += bytesToWrite;
 
                 if (processedBytes > originalSize)
-                    throw new InvalidOperationException(string.Format(AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.WrittenMoreBytesThanIntended, processedBytes, originalSize));
+                    throw new InvalidOperationException(string.Format(
+                        AuditMessages.ProcessFileBlocksAsyncPrefix + AuditMessages.WrittenMoreBytesThanIntended,
+                        processedBytes, originalSize));
 
                 if (processedBytes >= originalSize) break;
             }
@@ -316,13 +309,18 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
 
         var bytesToWrite = (int)Math.Min(bytesRead, originalSize - processedBytes);
         if (bytesToWrite < 0)
-            throw new InvalidOperationException(string.Format(AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.NegativeBytesToWrite, bytesToWrite));
+            throw new InvalidOperationException(string.Format(
+                AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.NegativeBytesToWrite, bytesToWrite));
 
         if (blockSize > plaintext.Length)
-            throw new InvalidOperationException(string.Format(AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.BlockSizeExceedsPlaintextBuffer, blockSize, plaintext.Length));
+            throw new InvalidOperationException(string.Format(
+                AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.BlockSizeExceedsPlaintextBuffer,
+                blockSize, plaintext.Length));
 
         if (processedBytes + bytesToWrite > originalSize)
-            throw new InvalidOperationException(string.Format(AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.WrittenMoreBytesThanIntended, processedBytes + bytesToWrite, originalSize));
+            throw new InvalidOperationException(string.Format(
+                AuditMessages.DecryptAndWriteBlockAsyncPrefix + AuditMessages.WrittenMoreBytesThanIntended,
+                processedBytes + bytesToWrite, originalSize));
 
         if (processedBytes + bytesToWrite >= originalSize)
         {
@@ -381,5 +379,30 @@ internal sealed class ChaCha20Poly1305DecryptionBase(
         await destinationStream.WriteAsync(alignedBuffer.AsMemory(0, alignedSize), cancellationToken);
 
         destinationStream.SetLength(originalSize);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ReadBlockAsync(
+        System.IO.Stream sourceStream,
+        byte[] buffer,
+        long blockIndex,
+        long totalBlocks,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var isLastBlock = blockIndex == totalBlocks - 1;
+            if (isLastBlock)
+                return await sourceStream.ReadAsync(buffer.AsMemory(0, BufferSize), cancellationToken);
+
+            await sourceStream.ReadExactlyAsync(buffer.AsMemory(0, BufferSize), cancellationToken);
+            return BufferSize;
+        }
+        catch (EndOfStreamException)
+        {
+            return 0;
+        }
     }
 }
