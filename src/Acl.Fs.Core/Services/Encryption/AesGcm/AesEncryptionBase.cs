@@ -198,7 +198,7 @@ internal sealed class AesEncryptionBase(
         CancellationToken cancellationToken)
     {
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
-        var totalBytesRead = 0;
+        var totalBytesRead = 0L;
 
         for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
