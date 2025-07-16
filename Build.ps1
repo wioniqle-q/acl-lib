@@ -13,7 +13,8 @@ Write-Host "Starting build process..." -ForegroundColor Green
 
 $SolutionFile = "Acl.Fs.sln"
 $SampleProjects = @(
-    "samples\Acl.Fs.AesGcm.Sample\Acl.Fs.AesGcm.Sample.csproj"
+    "samples\Acl.Fs.AesGcm.Sample\Acl.Fs.AesGcm.Sample.csproj",
+    "samples\Acl.Fs.ChaChaPoly201035.Sample\Acl.Fs.ChaChaPoly201035.Sample.csproj"
 )
 $SourceProjects = @(
     "src\Acl.Fs.Abstractions\Acl.Fs.Abstractions.csproj",
@@ -23,9 +24,11 @@ $SourceProjects = @(
     "src\Acl.Fs.Audit\Acl.Fs.Audit.csproj"
 )
 $TestProjects = @(
-    "tests\Acl.Fs.Core.UnitTests\Acl.Fs.Core.UnitTests.csproj",
-    "tests\Acl.Fs.Stream.UnitTests\Acl.Fs.Stream.UnitTests.csproj",
-    "tests\Acl.Fs.Native.UnitTests\Acl.Fs.Native.UnitTests.csproj"
+    "tests\UnitTests\Acl.Fs.Core.UnitTests\Acl.Fs.Core.UnitTests.csproj",
+    "tests\UnitTests\Acl.Fs.Stream.UnitTests\Acl.Fs.Stream.UnitTests.csproj",
+    "tests\UnitTests\Acl.Fs.Native.UnitTests\Acl.Fs.Native.UnitTests.csproj"
+    "tests\UnitTests\Acl.Fs.Audit.UnitTests\Acl.Fs.Audit.UnitTests.csproj"
+    "tests\IntegrationTests\Acl.Fs.Core.IntegrationTests\Acl.Fs.Core.IntegrationTests.csproj"
 )
 
 Write-Host "Cleaning solution..." -ForegroundColor Yellow
