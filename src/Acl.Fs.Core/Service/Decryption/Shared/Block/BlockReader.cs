@@ -13,6 +13,8 @@ internal sealed class BlockReader : IBlockReader
         byte[] metadataBuffer,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         switch (isSectorAligned)
         {
             case true:

@@ -49,6 +49,8 @@ internal sealed class EncryptorBase(
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             await _auditService.AuditEncryptionStarted("AesGcm", cancellationToken);
 
             var fileOptions = _alignmentPolicy.GetFileOptions();

@@ -38,6 +38,8 @@ internal sealed class BlockProcessor<T>(
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
         var totalBytesRead = 0L;
 

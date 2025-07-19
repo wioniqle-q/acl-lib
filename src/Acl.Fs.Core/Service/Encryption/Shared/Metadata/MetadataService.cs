@@ -36,6 +36,8 @@ internal sealed class MetadataService : IMetadataService
     public async Task WriteHeaderAsync(System.IO.Stream destinationStream, byte[] metadataBuffer,
         int metadataBufferSize, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         await destinationStream.WriteAsync(metadataBuffer.AsMemory(0, metadataBufferSize), cancellationToken);
     }
 }

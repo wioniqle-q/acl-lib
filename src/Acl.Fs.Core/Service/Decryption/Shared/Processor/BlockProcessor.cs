@@ -44,6 +44,8 @@ internal sealed class BlockProcessor<T>(
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         var blockIndex = 0L;
         var processedBytes = 0L;
 
@@ -115,6 +117,8 @@ internal sealed class BlockProcessor<T>(
         long originalSize,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         var isLastBlock = BlockCalculator.IsLastBlock(processedBytes, bytesRead, originalSize);
         var blockSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
@@ -159,6 +163,8 @@ internal sealed class BlockProcessor<T>(
         long originalSize,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        
         var alignedSize = _alignmentPolicy.CalculateProcessingSize(bytesToWrite, true);
 
         alignedBuffer.AsSpan(0, alignedSize).Clear();

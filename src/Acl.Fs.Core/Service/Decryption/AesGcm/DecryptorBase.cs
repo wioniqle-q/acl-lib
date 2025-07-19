@@ -48,6 +48,8 @@ internal sealed class DecryptorBase(
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             await _auditService.AuditDecryptionStarted("AesGcm", cancellationToken);
 
             var fileOptions = _alignmentPolicy.GetFileOptions();
