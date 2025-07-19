@@ -30,6 +30,9 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 
     public override async Task FlushAsync(CancellationToken cancellationToken)
     {
+        ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        
         await InnerStream.FlushAsync(cancellationToken);
         ExecutePlatformSpecificFlush(cancellationToken);
     }
@@ -49,6 +52,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        
         return await InnerStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
     }
 
@@ -56,6 +61,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        
         return await InnerStream.ReadAsync(buffer, cancellationToken);
     }
 
@@ -80,6 +87,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
     public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        
         await InnerStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
     }
 
@@ -87,6 +96,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
         CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        
         await InnerStream.WriteAsync(buffer, cancellationToken);
     }
 
