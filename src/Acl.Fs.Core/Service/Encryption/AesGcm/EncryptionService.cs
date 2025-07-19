@@ -4,7 +4,7 @@ using Acl.Fs.Core.Models.AesGcm;
 using Acl.Fs.Core.Pool;
 using Microsoft.Extensions.Logging;
 using FileTransferInstruction = Acl.Fs.Core.Models.FileTransferInstruction;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Encryption.AesGcm;
 

@@ -11,7 +11,8 @@ internal static class VersionConstants
     internal const int VersionHeaderSize = 2;
 
     internal static int UnalignedHeaderSize =>
-        VersionHeaderSize + KeyVaultConstants.NonceSize + sizeof(long) + KeyVaultConstants.SaltSize;
+        VersionHeaderSize + CryptoConstants.NonceSize + sizeof(long) + CryptoConstants.SaltSize +
+        CryptoConstants.Argon2IdSaltSize;
 
     internal static int HeaderSize => (UnalignedHeaderSize + StorageConstants.SectorSize - 1) /
         StorageConstants.SectorSize * StorageConstants.SectorSize;

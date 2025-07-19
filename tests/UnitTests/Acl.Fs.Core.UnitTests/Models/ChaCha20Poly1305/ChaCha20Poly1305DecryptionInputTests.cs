@@ -6,82 +6,153 @@ namespace Acl.Fs.Core.UnitTests.Models.ChaCha20Poly1305;
 public sealed class ChaCha20Poly1305DecryptionInputTests
 {
     [Fact]
-    public void Constructor_ValidKey32Bytes_CreatesInstance()
+    public void Constructor_WithValidPassword_ShouldCreateInstance()
     {
-        var key = new byte[32];
-        RandomNumberGenerator.Fill(key);
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
 
-        var input = new ChaCha20Poly1305DecryptionInput(key);
-        Assert.Equal(key, input.DecryptionKey.Span.ToArray());
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        Assert.Equal(passwordMemory.ToArray(), input.Password.ToArray());
     }
 
     [Fact]
-    public void Constructor_EmptyKey_ThrowsArgumentException()
+    public void Constructor_WithEmptyPassword_ShouldThrowArgumentException()
     {
-        var emptyKey = Array.Empty<byte>();
+        var emptyPassword = ReadOnlyMemory<byte>.Empty;
 
-        var exception = Assert.Throws<ArgumentException>(() => new ChaCha20Poly1305DecryptionInput(emptyKey));
-        Assert.Contains("Decryption key cannot be empty.", exception.Message);
-        Assert.Equal("decryptionKey", exception.ParamName);
-    }
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new ChaCha20Poly1305DecryptionInput(emptyPassword));
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(8)]
-    [InlineData(15)]
-    [InlineData(16)]
-    [InlineData(24)]
-    [InlineData(31)]
-    [InlineData(33)]
-    [InlineData(64)]
-    public void Constructor_InvalidKeySize_ThrowsArgumentException(int keySize)
-    {
-        var invalidKey = new byte[keySize];
-        RandomNumberGenerator.Fill(invalidKey);
-
-        var exception = Assert.Throws<ArgumentException>(() => new ChaCha20Poly1305DecryptionInput(invalidKey));
-        Assert.Contains("Decryption key must be exactly 32 bytes for ChaCha20Poly1305.", exception.Message);
-        Assert.Equal("decryptionKey", exception.ParamName);
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+        Assert.Equal("password", exception.ParamName);
     }
 
     [Fact]
-    public void ChaCha20Poly1305DecryptionInput_IsRecord_SupportsValueEquality()
+    public void Constructor_WithSingleBytePassword_ShouldCreateInstance()
     {
-        var key = new byte[32];
-        RandomNumberGenerator.Fill(key);
+        var password = new byte[] { 0x42 };
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
 
-        var input1 = new ChaCha20Poly1305DecryptionInput(key);
-        var input2 = new ChaCha20Poly1305DecryptionInput(key);
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        Assert.Single(input.Password.ToArray());
+        Assert.Equal(0x42, input.Password.ToArray()[0]);
+    }
+
+    [Fact]
+    public void Constructor_WithLargePassword_ShouldCreateInstance()
+    {
+        var password = new byte[1024];
+        RandomNumberGenerator.Fill(password);
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        Assert.Equal(1024, input.Password.Length);
+        Assert.Equal(password, input.Password.ToArray());
+    }
+
+    [Fact]
+    public void Password_Property_ShouldReturnSameValueAsConstructorInput()
+    {
+        var originalPassword = "secure-password-123"u8.ToArray();
+
+        var passwordMemory = new ReadOnlyMemory<byte>(originalPassword);
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        var retrievedPassword = input.Password;
+
+        Assert.Equal(originalPassword, retrievedPassword.ToArray());
+        Assert.True(passwordMemory.Span.SequenceEqual(retrievedPassword.Span));
+    }
+
+    [Fact]
+    public void Constructor_WithNullByteArrayPassword_ShouldThrowArgumentException()
+    {
+        var passwordMemory = new ReadOnlyMemory<byte>(null);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new ChaCha20Poly1305DecryptionInput(passwordMemory));
+
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+    }
+
+    [Fact]
+    public void Constructor_WithZeroLengthArray_ShouldThrowArgumentException()
+    {
+        var emptyArray = Array.Empty<byte>();
+        var passwordMemory = new ReadOnlyMemory<byte>(emptyArray);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new ChaCha20Poly1305DecryptionInput(passwordMemory));
+
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+        Assert.Equal("password", exception.ParamName);
+    }
+
+    [Fact]
+    public void Equality_WithSamePassword_ShouldBeEqual()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory1 = new ReadOnlyMemory<byte>(password);
+        var passwordMemory2 = new ReadOnlyMemory<byte>(password);
+
+        var input1 = new ChaCha20Poly1305DecryptionInput(passwordMemory1);
+        var input2 = new ChaCha20Poly1305DecryptionInput(passwordMemory2);
 
         Assert.Equal(input1, input2);
         Assert.True(input1 == input2);
+        Assert.False(input1 != input2);
         Assert.Equal(input1.GetHashCode(), input2.GetHashCode());
     }
 
     [Fact]
-    public void ChaCha20Poly1305DecryptionInput_DifferentKeys_NotEqual()
+    public void Equality_WithDifferentPassword_ShouldNotBeEqual()
     {
-        var key1 = new byte[32];
-        var key2 = new byte[32];
+        var password1 = "password1"u8.ToArray();
+        var password2 = "password2"u8.ToArray();
+        var passwordMemory1 = new ReadOnlyMemory<byte>(password1);
+        var passwordMemory2 = new ReadOnlyMemory<byte>(password2);
 
-        RandomNumberGenerator.Fill(key1);
-        RandomNumberGenerator.Fill(key2);
-
-        var input1 = new ChaCha20Poly1305DecryptionInput(key1);
-        var input2 = new ChaCha20Poly1305DecryptionInput(key2);
+        var input1 = new ChaCha20Poly1305DecryptionInput(passwordMemory1);
+        var input2 = new ChaCha20Poly1305DecryptionInput(passwordMemory2);
 
         Assert.NotEqual(input1, input2);
         Assert.False(input1 == input2);
+        Assert.True(input1 != input2);
     }
 
     [Fact]
-    public void DecryptionKey_ReturnsCorrectReference()
+    public void ToString_ShouldReturnReadableRepresentation()
     {
-        var originalKey = new byte[32];
-        RandomNumberGenerator.Fill(originalKey);
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
 
-        var input = new ChaCha20Poly1305DecryptionInput(originalKey);
+        var stringRepresentation = input.ToString();
 
-        Assert.Equal(originalKey, input.DecryptionKey.Span.ToArray());
+        Assert.NotNull(stringRepresentation);
+        Assert.Contains("ChaCha20Poly1305DecryptionInput", stringRepresentation);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    [InlineData(32)]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    [InlineData(512)]
+    public void Constructor_WithVariousPasswordLengths_ShouldCreateInstance(int passwordLength)
+    {
+        var password = new byte[passwordLength];
+        RandomNumberGenerator.Fill(password);
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        Assert.Equal(passwordLength, input.Password.Length);
+        Assert.Equal(password, input.Password.ToArray());
     }
 }

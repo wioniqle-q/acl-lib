@@ -1,7 +1,9 @@
 ﻿using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Factory;
+using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Factory;
 using Acl.Fs.Core.Policy;
+using Acl.Fs.Core.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -19,6 +21,8 @@ public static class ServiceCollectionExtensions
 #endif
 
         services.TryAddSingleton<IFileVersionValidator, FileVersionValidator>();
+        services.TryAddSingleton<IKeyDerivationService, Argon2KeyDerivationService>();
+        services.TryAddScoped<IKeyPreparationService, KeyPreparationService>();
 
         return services;
     }

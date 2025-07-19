@@ -5,6 +5,7 @@ using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Metadata;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Validation;
+using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
@@ -19,7 +20,9 @@ internal sealed class EncryptorBase(
     IMetadataService metadataService,
     IBlockProcessor<System.Security.Cryptography.AesGcm> blockProcessor,
     IValidationService validationService,
-    IAuditService auditService)
+    IAuditService auditService,
+    IKeyPreparationService keyPreparationService
+)
     : IEncryptorBase
 {
     private readonly IAesGcmFactory _aesGcmFactory =
@@ -33,6 +36,9 @@ internal sealed class EncryptorBase(
 
     private readonly IBlockProcessor<System.Security.Cryptography.AesGcm> _blockProcessor =
         blockProcessor ?? throw new ArgumentNullException(nameof(blockProcessor));
+
+    private readonly IKeyPreparationService _keyPreparationService =
+        keyPreparationService ?? throw new ArgumentNullException(nameof(keyPreparationService));
 
     private readonly IMetadataService _metadataService =
         metadataService ?? throw new ArgumentNullException(nameof(metadataService));
@@ -55,7 +61,9 @@ internal sealed class EncryptorBase(
             var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
             using var bufferManager = new BufferManager(metadataBufferSize);
-            using var aesGcm = _aesGcmFactory.Create(key);
+
+            using var keyPreparation = _keyPreparationService.PrepareKey(key.AsSpan());
+            using var aesGcm = _aesGcmFactory.Create(keyPreparation.DerivedKey.ToArray());
 
             await using var sourceStream =
                 CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
@@ -66,6 +74,7 @@ internal sealed class EncryptorBase(
             await _auditService.AuditOutputStreamOpened(instruction.DestinationPath, cancellationToken);
 
             _metadataService.PrepareMetadata(nonce, sourceStream.Length, bufferManager.Salt,
+                keyPreparation.Salt.ToArray(),
                 bufferManager.MetadataBuffer, metadataBufferSize);
             await _auditService.AuditHeaderPrepared(cancellationToken);
 

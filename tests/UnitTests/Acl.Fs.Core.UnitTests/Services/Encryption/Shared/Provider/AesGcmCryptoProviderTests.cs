@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 using Acl.Fs.Core.Service.Encryption.Shared.Provider;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Encryption.Shared.Provider;
 

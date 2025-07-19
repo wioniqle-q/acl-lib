@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Acl.Fs.Constant.Versioning;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Block;

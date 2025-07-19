@@ -2,7 +2,7 @@
 using Acl.Fs.Core.Service.Decryption.Shared.Header;
 using Moq;
 using static Acl.Fs.Constant.Versioning.VersionConstants;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Decryption.Shared.Header;
 
@@ -40,7 +40,7 @@ public sealed class HeaderReaderTests
         Assert.Equal(CurrentMinorVersion, header.MinorVersion);
         Assert.Equal(originalSize, header.OriginalSize);
         Assert.Equal(nonce, header.Nonce);
-        Assert.Equal(salt, header.Salt);
+        Assert.Equal(salt, header.ChaCha20Salt);
 
         _versionValidatorMock.Verify(v => v.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion), Times.Once());
     }

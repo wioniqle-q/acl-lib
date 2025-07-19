@@ -1,6 +1,6 @@
 ﻿using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Buffer;
 using Acl.Fs.Core.Service.Decryption.Shared.Buffer;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Decryption.Shared.Buffer;

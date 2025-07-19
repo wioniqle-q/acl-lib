@@ -1,6 +1,6 @@
 ﻿using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Block;
 using static Acl.Fs.Constant.Storage.StorageConstants;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Block;
 

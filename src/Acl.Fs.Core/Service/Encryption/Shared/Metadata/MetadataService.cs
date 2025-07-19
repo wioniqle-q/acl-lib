@@ -2,16 +2,17 @@
 using Acl.Fs.Constant.Versioning;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Metadata;
 using Acl.Fs.Core.Utility;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Encryption.Shared.Metadata;
 
 internal sealed class MetadataService : IMetadataService
 {
-    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] salt, byte[] metadataBuffer,
+    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, byte[] argon2Salt,
+        byte[] metadataBuffer,
         int metadataBufferSize)
     {
-        CryptoOperations.PrecomputeSalt(nonce, salt);
+        CryptoOperations.PrecomputeSalt(nonce, chaCha20Salt);
 
         metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
 
@@ -26,7 +27,10 @@ internal sealed class MetadataService : IMetadataService
         BinaryPrimitives.WriteInt64LittleEndian(metadataBuffer.AsSpan(offset), originalSize);
         offset += sizeof(long);
 
-        salt.CopyTo(metadataBuffer.AsSpan(offset));
+        chaCha20Salt.CopyTo(metadataBuffer.AsSpan(offset));
+        offset += SaltSize;
+
+        argon2Salt.AsSpan(0, Argon2IdSaltSize).CopyTo(metadataBuffer.AsSpan(offset));
     }
 
     public async Task WriteHeaderAsync(System.IO.Stream destinationStream, byte[] metadataBuffer,

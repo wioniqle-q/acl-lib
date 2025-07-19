@@ -5,4 +5,6 @@ internal readonly record struct Header(
     byte MinorVersion,
     long OriginalSize,
     byte[] Nonce,
-    byte[] Salt);
+    byte[] ChaCha20Salt,
+    byte[] Argon2Salt
+);

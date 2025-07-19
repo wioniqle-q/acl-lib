@@ -6,6 +6,7 @@ using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Block;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Header;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Processor;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Validation;
+using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Resource;
 using Acl.Fs.Core.Service.Decryption.Shared.Block;
@@ -23,7 +24,8 @@ internal sealed class DecryptorBase(
     IBlockReader blockReader,
     IHeaderReader headerReader,
     IAuditService auditService,
-    IBlockValidator blockValidator
+    IBlockValidator blockValidator,
+    IKeyPreparationService keyPreparationService
 )
     : IDecryptorBase
 {
@@ -48,6 +50,9 @@ internal sealed class DecryptorBase(
     private readonly IHeaderReader _headerReader =
         headerReader ?? throw new ArgumentNullException(nameof(headerReader));
 
+    private readonly IKeyPreparationService _keyPreparationService =
+        keyPreparationService ?? throw new ArgumentNullException(nameof(keyPreparationService));
+
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
         byte[] key,
@@ -62,7 +67,6 @@ internal sealed class DecryptorBase(
             var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
             using var bufferManager = new BufferManager(metadataBufferSize);
-            using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(key);
 
             await using var sourceStream =
                 CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);
@@ -80,6 +84,10 @@ internal sealed class DecryptorBase(
                 cancellationToken);
 
             await _auditService.AuditHeaderRead(cancellationToken);
+
+            using var keyPreparation =
+                _keyPreparationService.PrepareKeyWithSalt(key.AsSpan(), header.Argon2Salt.AsSpan());
+            using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(keyPreparation.DerivedKey.ToArray());
 
             await ProcessAllBlocksAsync(
                 sourceStream,

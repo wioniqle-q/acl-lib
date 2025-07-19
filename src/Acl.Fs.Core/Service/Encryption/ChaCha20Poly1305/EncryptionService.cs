@@ -4,7 +4,7 @@ using Acl.Fs.Core.Models.ChaCha20Poly1305;
 using Acl.Fs.Core.Pool;
 using Microsoft.Extensions.Logging;
 using FileTransferInstruction = Acl.Fs.Core.Models.FileTransferInstruction;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Encryption.ChaCha20Poly1305;
 
@@ -34,7 +34,7 @@ internal sealed class EncryptionService(
 
             await _encryptorBase.ExecuteEncryptionProcessAsync(
                 transferInstruction,
-                input.EncryptionKey.Span.ToArray(),
+                input.Password.Span.ToArray(),
                 nonceBuffer.AsSpan(0, NonceSize).ToArray(),
                 _logger,
                 cancellationToken);
@@ -42,7 +42,7 @@ internal sealed class EncryptionService(
         finally
         {
             CryptoPool.Return(nonceBuffer);
-            CryptographicOperations.ZeroMemory(input.EncryptionKey.Span.ToArray());
+            CryptographicOperations.ZeroMemory(input.Password.Span.ToArray());
         }
     }
 }

@@ -5,7 +5,7 @@ internal interface IHeaderReader
     Task<Header> ReadHeaderAsync(
         System.IO.Stream sourceStream,
         byte[] metadataBuffer,
-        byte[] salt,
+        byte[] chaCha20Salt,
         int metadataBufferSize,
         CancellationToken cancellationToken);
 }

@@ -1,6 +1,6 @@
 ﻿using System.Buffers.Binary;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Processor;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Provider;
 

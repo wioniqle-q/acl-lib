@@ -1,6 +1,6 @@
 ﻿using Acl.Fs.Constant.Versioning;
 using Acl.Fs.Core.Service.Decryption.Shared.Block;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Decryption.Shared.Block;

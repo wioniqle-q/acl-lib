@@ -4,7 +4,7 @@ using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Service.Encryption.Shared.Processor;
 using Moq;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.UnitTests.Services.Encryption.Shared.Processor;

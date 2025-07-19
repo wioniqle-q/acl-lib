@@ -2,7 +2,7 @@
 using Acl.Fs.Constant.Versioning;
 using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Header;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Header;
 
@@ -14,7 +14,7 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
     public async Task<Abstractions.Service.Decryption.Shared.Header.Header> ReadHeaderAsync(
         System.IO.Stream sourceStream,
         byte[] metadataBuffer,
-        byte[] salt,
+        byte[] chaCha20Salt,
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
@@ -29,16 +29,23 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
 
         _versionValidator.ValidateVersion(majorVersion, minorVersion);
 
-        var nonce = metadataSpan.Slice(VersionConstants.VersionHeaderSize, NonceSize);
-        var originalSize = BinaryPrimitives.ReadInt64LittleEndian(
-            metadataSpan[(VersionConstants.VersionHeaderSize + NonceSize)..]);
+        var offset = VersionConstants.VersionHeaderSize;
+
+        var nonce = metadataSpan.Slice(offset, NonceSize);
+        offset += NonceSize;
+
+        var originalSize = BinaryPrimitives.ReadInt64LittleEndian(metadataSpan[offset..]);
+        offset += sizeof(long);
+
+        metadataSpan.Slice(offset, SaltSize).CopyTo(chaCha20Salt);
+        offset += SaltSize;
+
+        var argon2Salt = new byte[Argon2IdSaltSize];
+        metadataSpan.Slice(offset, Argon2IdSaltSize).CopyTo(argon2Salt);
 
         nonce.CopyTo(metadataBuffer.AsSpan(0, NonceSize));
 
-        metadataSpan.Slice(VersionConstants.VersionHeaderSize + NonceSize + sizeof(long), SaltSize)
-            .CopyTo(salt);
-
         return new Abstractions.Service.Decryption.Shared.Header.Header(majorVersion, minorVersion, originalSize,
-            nonce.ToArray(), salt);
+            nonce.ToArray(), chaCha20Salt, argon2Salt);
     }
 }

@@ -2,15 +2,13 @@ namespace Acl.Fs.Core.Models.ChaCha20Poly1305;
 
 public readonly record struct ChaCha20Poly1305EncryptionInput
 {
-    public ChaCha20Poly1305EncryptionInput(ReadOnlyMemory<byte> encryptionKey)
+    public ChaCha20Poly1305EncryptionInput(ReadOnlyMemory<byte> password)
     {
-        if (encryptionKey.IsEmpty)
-            throw new ArgumentException("Encryption key cannot be empty.", nameof(encryptionKey));
-        if (encryptionKey.Length is not 32)
-            throw new ArgumentException("Encryption key must be exactly 32 bytes for ChaCha20Poly1305.",
-                nameof(encryptionKey));
-        EncryptionKey = encryptionKey;
+        if (password.IsEmpty)
+            throw new ArgumentException("Password cannot be empty.", nameof(password));
+
+        Password = password;
     }
 
-    public ReadOnlyMemory<byte> EncryptionKey { get; }
+    public ReadOnlyMemory<byte> Password { get; }
 }

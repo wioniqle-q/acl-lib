@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using Acl.Fs.Core.Abstractions.Factory;
 using Acl.Fs.Core.Resource;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Factory;
 

@@ -28,13 +28,13 @@ internal sealed class DecryptionService(
         {
             await _decryptorBase.ExecuteDecryptionProcessAsync(
                 transferInstruction,
-                input.DecryptionKey.Span.ToArray(),
+                input.Password.Span.ToArray(),
                 _logger,
                 cancellationToken);
         }
         finally
         {
-            CryptographicOperations.ZeroMemory(input.DecryptionKey.Span.ToArray());
+            CryptographicOperations.ZeroMemory(input.Password.Span.ToArray());
         }
     }
 }

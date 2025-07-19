@@ -16,24 +16,24 @@ public sealed class BlockReaderTests
         var stream = new MemoryStream(data);
         var reader = new BlockReader();
         var metadataBuffer = new byte[StorageConstants.SectorSize];
-        var tag = new byte[KeyVaultConstants.TagSize];
+        var tag = new byte[CryptoConstants.TagSize];
 
         await reader.ReadTagAsync(stream, true, tag, metadataBuffer);
 
         Assert.Equal(data, metadataBuffer);
-        Assert.Equal(data.Take(KeyVaultConstants.TagSize).ToArray(), tag);
+        Assert.Equal(data.Take(CryptoConstants.TagSize).ToArray(), tag);
     }
 
     [Fact]
     public async Task ReadTagAsync_NonSectorAligned_ReadsCorrectly()
     {
-        var data = new byte[KeyVaultConstants.TagSize];
+        var data = new byte[CryptoConstants.TagSize];
         for (var i = 0; i < data.Length; i++)
             data[i] = (byte)i;
 
         var stream = new MemoryStream(data);
         var reader = new BlockReader();
-        var tag = new byte[KeyVaultConstants.TagSize];
+        var tag = new byte[CryptoConstants.TagSize];
 
         await reader.ReadTagAsync(stream, false, tag, []);
 
@@ -47,7 +47,7 @@ public sealed class BlockReaderTests
         var stream = new MemoryStream(data);
         var reader = new BlockReader();
         var metadataBuffer = new byte[StorageConstants.SectorSize];
-        var tag = new byte[KeyVaultConstants.TagSize];
+        var tag = new byte[CryptoConstants.TagSize];
 
         await Assert.ThrowsAsync<EndOfStreamException>(() =>
             reader.ReadTagAsync(stream, true, tag, metadataBuffer));
@@ -56,10 +56,10 @@ public sealed class BlockReaderTests
     [Fact]
     public async Task ReadTagAsync_NonSectorAligned_InsufficientData_ThrowsEndOfStreamException()
     {
-        var data = new byte[KeyVaultConstants.TagSize - 1];
+        var data = new byte[CryptoConstants.TagSize - 1];
         var stream = new MemoryStream(data);
         var reader = new BlockReader();
-        var tag = new byte[KeyVaultConstants.TagSize];
+        var tag = new byte[CryptoConstants.TagSize];
 
         await Assert.ThrowsAsync<EndOfStreamException>(() =>
             reader.ReadTagAsync(stream, false, tag, []));
@@ -71,7 +71,7 @@ public sealed class BlockReaderTests
         var stream = new MemoryStream(new byte[StorageConstants.SectorSize]);
         var reader = new BlockReader();
         var metadataBuffer = new byte[StorageConstants.SectorSize];
-        var tag = new byte[KeyVaultConstants.TagSize];
+        var tag = new byte[CryptoConstants.TagSize];
         var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
@@ -146,7 +146,7 @@ public sealed class BlockReaderTests
     [Fact]
     public async Task ReadBlockAsync_LastBlock_MoreThanBufferSize_ReadsUpToBufferSize()
     {
-        var data = new byte[10000];
+        var data = new byte[StorageConstants.BufferSize];
         for (var i = 0; i < data.Length; i++)
             data[i] = (byte)i;
 

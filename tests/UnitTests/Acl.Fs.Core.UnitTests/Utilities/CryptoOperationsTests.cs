@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 using Acl.Fs.Core.Utility;
-using static Acl.Fs.Constant.Cryptography.KeyVaultConstants;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.UnitTests.Utilities;
 
