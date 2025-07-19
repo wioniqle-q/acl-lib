@@ -19,7 +19,7 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         await sourceStream.ReadExactlyAsync(
             metadataBuffer.AsMemory(0, metadataBufferSize),
             cancellationToken);

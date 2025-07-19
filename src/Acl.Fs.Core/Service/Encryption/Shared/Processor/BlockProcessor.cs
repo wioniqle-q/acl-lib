@@ -39,13 +39,12 @@ internal sealed class BlockProcessor<T>(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
         var totalBytesRead = 0L;
 
         for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
         {
-
             var bytesRead = await ReadBlockAsync(sourceStream, bufferManager.Buffer, blockIndex,
                 totalBlocks, cancellationToken);
             if (bytesRead is 0)

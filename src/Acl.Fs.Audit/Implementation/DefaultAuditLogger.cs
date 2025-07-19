@@ -8,7 +8,7 @@ internal sealed class DefaultAuditLogger(ILogger<DefaultAuditLogger> logger) : I
     public ValueTask LogAsync(IAuditEntry entry, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         var diagnosticContextStr = entry.DiagnosticContext is { Count: > 0 }
             ? string.Join(", ", entry.DiagnosticContext.Select(kv => $"{kv.Key}={kv.Value}"))
             : "";

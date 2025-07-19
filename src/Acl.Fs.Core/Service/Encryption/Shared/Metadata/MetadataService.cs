@@ -37,7 +37,7 @@ internal sealed class MetadataService : IMetadataService
         int metadataBufferSize, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         await destinationStream.WriteAsync(metadataBuffer.AsMemory(0, metadataBufferSize), cancellationToken);
     }
 }

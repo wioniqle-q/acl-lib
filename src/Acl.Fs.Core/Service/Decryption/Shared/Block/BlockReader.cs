@@ -14,7 +14,7 @@ internal sealed class BlockReader : IBlockReader
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         switch (isSectorAligned)
         {
             case true:

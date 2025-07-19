@@ -50,7 +50,7 @@ internal sealed class EncryptorBase(
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             await _auditService.AuditEncryptionStarted("ChaCha20Poly1305", cancellationToken);
 
             var fileOptions = _alignmentPolicy.GetFileOptions();
