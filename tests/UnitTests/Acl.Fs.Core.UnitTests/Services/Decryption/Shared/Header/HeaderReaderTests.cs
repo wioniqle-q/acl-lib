@@ -75,7 +75,7 @@ public sealed class HeaderReaderTests
         var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() =>
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
             _headerReader.ReadHeaderAsync(stream, metadataBuffer, saltBuffer, metadataBufferSize, cts.Token));
     }
 

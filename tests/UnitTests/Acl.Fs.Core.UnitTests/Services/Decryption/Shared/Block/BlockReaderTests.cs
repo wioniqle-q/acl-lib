@@ -75,7 +75,7 @@ public sealed class BlockReaderTests
         var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() =>
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
             reader.ReadTagAsync(stream, true, tag, metadataBuffer, cts.Token));
     }
 
