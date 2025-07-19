@@ -4,13 +4,11 @@ using Acl.Fs.Core.Abstractions.Service.Encryption.ChaCha20Poly1305;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Metadata;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
-using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Validation;
 using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using Microsoft.Extensions.Logging;
-using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.Service.Encryption.ChaCha20Poly1305;
 
@@ -19,7 +17,6 @@ internal sealed class EncryptorBase(
     IAlignmentPolicy alignmentPolicy,
     IMetadataService metadataService,
     IBlockProcessor<System.Security.Cryptography.ChaCha20Poly1305> blockProcessor,
-    IValidationService validationService,
     IAuditService auditService,
     IKeyPreparationService keyPreparationService
 )
@@ -42,9 +39,6 @@ internal sealed class EncryptorBase(
 
     private readonly IMetadataService _metadataService =
         metadataService ?? throw new ArgumentNullException(nameof(metadataService));
-
-    private readonly IValidationService _validationService =
-        validationService ?? throw new ArgumentNullException(nameof(validationService));
 
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
@@ -82,7 +76,7 @@ internal sealed class EncryptorBase(
                 cancellationToken);
             await _auditService.AuditHeaderWritten(cancellationToken);
 
-            await ProcessAllBlocksAsync(
+            await _blockProcessor.ProcessAllBlocksAsync(
                 sourceStream,
                 destinationStream,
                 chaCha20Poly1305,
@@ -97,39 +91,5 @@ internal sealed class EncryptorBase(
             await _auditService.AuditEncryptionFailed(ex, cancellationToken);
             throw;
         }
-    }
-
-    private async Task ProcessAllBlocksAsync(
-        System.IO.Stream sourceStream,
-        System.IO.Stream destinationStream,
-        System.Security.Cryptography.ChaCha20Poly1305 chaCha20Poly1305,
-        BufferManager bufferManager,
-        int metadataBufferSize,
-        CancellationToken cancellationToken)
-    {
-        var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
-        var totalBytesRead = 0L;
-
-        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
-        {
-            var bytesRead = await _blockProcessor.ReadBlockAsync(sourceStream, bufferManager.Buffer, blockIndex,
-                totalBlocks, cancellationToken);
-            if (bytesRead is 0)
-                break;
-
-            totalBytesRead += bytesRead;
-
-            await _blockProcessor.ProcessBlockAsync(
-                destinationStream,
-                chaCha20Poly1305,
-                bufferManager,
-                bytesRead,
-                blockIndex,
-                totalBlocks,
-                metadataBufferSize,
-                cancellationToken);
-        }
-
-        await _validationService.ValidateFileReadConsistencyAsync(totalBytesRead, sourceStream, cancellationToken);
     }
 }

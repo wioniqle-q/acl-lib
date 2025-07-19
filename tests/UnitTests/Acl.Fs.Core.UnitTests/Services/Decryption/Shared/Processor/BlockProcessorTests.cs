@@ -1,4 +1,6 @@
 ﻿using Acl.Fs.Core.Abstractions;
+using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Audit;
+using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Block;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Processor;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Validation;
 using Acl.Fs.Core.Service.Decryption.Shared.Processor;
@@ -10,7 +12,9 @@ namespace Acl.Fs.Core.UnitTests.Services.Decryption.Shared.Processor;
 public sealed class BlockProcessorTests
 {
     private readonly Mock<IAlignmentPolicy> _alignmentPolicyMock;
+    private readonly Mock<IAuditService> _auditServiceMock;
     private readonly BlockProcessor<object> _blockProcessor;
+    private readonly Mock<IBlockReader> _blockReaderMock;
     private readonly Mock<IBlockValidator> _blockValidatorMock;
     private readonly Mock<ICryptoProvider<object>> _cryptoProviderMock;
 
@@ -19,10 +23,14 @@ public sealed class BlockProcessorTests
         _alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         _cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         _blockValidatorMock = new Mock<IBlockValidator>();
+        _blockReaderMock = new Mock<IBlockReader>();
+        _auditServiceMock = new Mock<IAuditService>();
         _blockProcessor = new BlockProcessor<object>(
             _alignmentPolicyMock.Object,
             _cryptoProviderMock.Object,
-            _blockValidatorMock.Object
+            _blockValidatorMock.Object,
+            _blockReaderMock.Object,
+            _auditServiceMock.Object
         );
     }
 
@@ -178,7 +186,9 @@ public sealed class BlockProcessorTests
         var blockProcessor = new BlockProcessor<object>(
             _alignmentPolicyMock.Object,
             _cryptoProviderMock.Object,
-            blockValidator
+            blockValidator,
+            _blockReaderMock.Object,
+            _auditServiceMock.Object
         );
 
         _alignmentPolicyMock.Setup(p => p.CalculateProcessingSize(bytesRead, false)).Returns(101);

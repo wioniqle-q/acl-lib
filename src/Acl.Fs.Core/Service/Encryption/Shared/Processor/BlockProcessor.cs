@@ -2,6 +2,7 @@
 using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
+using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Validation;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
@@ -12,7 +13,8 @@ namespace Acl.Fs.Core.Service.Encryption.Shared.Processor;
 internal sealed class BlockProcessor<T>(
     ICryptoProvider<T> cryptoProvider,
     IAlignmentPolicy alignmentPolicy,
-    IAuditService auditService
+    IAuditService auditService,
+    IValidationService validationService
 ) : IBlockProcessor<T>
 {
     private readonly IAlignmentPolicy _alignmentPolicy =
@@ -23,6 +25,45 @@ internal sealed class BlockProcessor<T>(
 
     private readonly ICryptoProvider<T> _cryptoProvider =
         cryptoProvider ?? throw new ArgumentNullException(nameof(cryptoProvider));
+
+    private readonly IValidationService _validationService = validationService
+                                                             ?? throw new ArgumentNullException(
+                                                                 nameof(validationService));
+
+    public async Task ProcessAllBlocksAsync(
+        System.IO.Stream sourceStream,
+        System.IO.Stream destinationStream,
+        T cryptoAlgorithm,
+        BufferManager bufferManager,
+        int metadataBufferSize,
+        CancellationToken cancellationToken)
+    {
+        var totalBlocks = (sourceStream.Length + BufferSize - 1) / BufferSize;
+        var totalBytesRead = 0L;
+
+        for (var blockIndex = 0L; blockIndex < totalBlocks; blockIndex++)
+        {
+
+            var bytesRead = await ReadBlockAsync(sourceStream, bufferManager.Buffer, blockIndex,
+                totalBlocks, cancellationToken);
+            if (bytesRead is 0)
+                break;
+
+            totalBytesRead += bytesRead;
+
+            await ProcessBlockAsync(
+                destinationStream,
+                cryptoAlgorithm,
+                bufferManager,
+                bytesRead,
+                blockIndex,
+                totalBlocks,
+                metadataBufferSize,
+                cancellationToken);
+        }
+
+        await _validationService.ValidateFileReadConsistencyAsync(totalBytesRead, sourceStream, cancellationToken);
+    }
 
     public async Task ProcessBlockAsync(
         System.IO.Stream destinationStream,

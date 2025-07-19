@@ -1,6 +1,7 @@
 ﻿using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
+using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Validation;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Service.Encryption.Shared.Processor;
 using Moq;
@@ -17,8 +18,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var destinationStream = new MemoryStream();
         var cryptoAlgorithm = new object();
@@ -45,8 +47,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var destinationStream = new MemoryStream();
         var cryptoAlgorithm = new object();
@@ -69,8 +72,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var destinationStream = new MemoryStream();
         var cryptoAlgorithm = new object();
@@ -94,8 +98,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var destinationStream = new MemoryStream();
         var cryptoAlgorithm = new object();
@@ -124,8 +129,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var sourceStream = new MemoryStream(new byte[availableBytes]);
         var buffer = new byte[BufferSize];
@@ -142,8 +148,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var sourceStream = new MemoryStream(new byte[500]);
         var buffer = new byte[BufferSize];
@@ -159,8 +166,9 @@ public sealed class BlockProcessorTests
         var cryptoProviderMock = new Mock<ICryptoProvider<object>>();
         var alignmentPolicyMock = new Mock<IAlignmentPolicy>();
         var auditServiceMock = new Mock<IAuditService>();
+        var validationServiceMock = new Mock<IValidationService>();
         var blockProcessor = new BlockProcessor<object>(cryptoProviderMock.Object, alignmentPolicyMock.Object,
-            auditServiceMock.Object);
+            auditServiceMock.Object, validationServiceMock.Object);
 
         var destinationStream = new MemoryStream();
         var metadataBuffer = new byte[HmacKeySize];

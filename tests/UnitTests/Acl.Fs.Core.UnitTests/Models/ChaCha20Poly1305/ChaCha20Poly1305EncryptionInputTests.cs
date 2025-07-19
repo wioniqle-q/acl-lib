@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using System.Text;
 using Acl.Fs.Core.Models.ChaCha20Poly1305;
 
 namespace Acl.Fs.Core.UnitTests.Models.ChaCha20Poly1305;
@@ -163,7 +164,7 @@ public sealed class ChaCha20Poly1305EncryptionInputTests
     {
         var passwordString = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
 
-        var password = System.Text.Encoding.UTF8.GetBytes(passwordString);
+        var password = Encoding.UTF8.GetBytes(passwordString);
         var passwordMemory = new ReadOnlyMemory<byte>(password);
 
         var input = new ChaCha20Poly1305EncryptionInput(passwordMemory);

@@ -4,6 +4,14 @@ namespace Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
 
 internal interface IBlockProcessor<in T>
 {
+    Task ProcessAllBlocksAsync(
+        System.IO.Stream sourceStream,
+        System.IO.Stream destinationStream,
+        T cryptoAlgorithm,
+        BufferManager bufferManager,
+        int metadataBufferSize,
+        CancellationToken cancellationToken);
+
     Task ProcessBlockAsync(
         System.IO.Stream destinationStream,
         T cryptoAlgorithm,

@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using System.Text;
 using Acl.Fs.Core.Models.AesGcm;
 
 namespace Acl.Fs.Core.UnitTests.Models.AesGcm;
@@ -6,103 +7,191 @@ namespace Acl.Fs.Core.UnitTests.Models.AesGcm;
 public sealed class AesEncryptionInputTests
 {
     [Fact]
-    public void Constructor_ValidKey16Bytes_CreatesInstance()
+    public void Constructor_WithValidPassword_ShouldCreateInstance()
     {
-        var key = new byte[16];
-        RandomNumberGenerator.Fill(key);
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
 
-        var input = new AesEncryptionInput(key);
-        Assert.Equal(key, input.EncryptionKey.Span.ToArray());
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.Equal(passwordMemory.ToArray(), input.Password.ToArray());
     }
 
     [Fact]
-    public void Constructor_ValidKey24Bytes_CreatesInstance()
+    public void Constructor_WithEmptyPassword_ShouldThrowArgumentException()
     {
-        var key = new byte[24];
-        RandomNumberGenerator.Fill(key);
+        var emptyPassword = ReadOnlyMemory<byte>.Empty;
 
-        var input = new AesEncryptionInput(key);
-        Assert.Equal(key, input.EncryptionKey.Span.ToArray());
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new AesEncryptionInput(emptyPassword));
+
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+        Assert.Equal("password", exception.ParamName);
     }
 
     [Fact]
-    public void Constructor_ValidKey32Bytes_CreatesInstance()
+    public void Constructor_WithSingleBytePassword_ShouldCreateInstance()
     {
-        var key = new byte[32];
-        RandomNumberGenerator.Fill(key);
+        var password = new byte[] { 0x42 };
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
 
-        var input = new AesEncryptionInput(key);
-        Assert.Equal(key, input.EncryptionKey.Span.ToArray());
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.Single(input.Password.ToArray());
+        Assert.Equal(0x42, input.Password.ToArray()[0]);
     }
 
     [Fact]
-    public void Constructor_EmptyKey_ThrowsArgumentException()
+    public void Constructor_WithLargePassword_ShouldCreateInstance()
     {
-        var emptyKey = Array.Empty<byte>();
+        var password = new byte[1024];
+        RandomNumberGenerator.Fill(password);
 
-        var exception = Assert.Throws<ArgumentException>(() => new AesEncryptionInput(emptyKey));
-        Assert.Contains("Encryption key cannot be empty.", exception.Message);
-        Assert.Equal("encryptionKey", exception.ParamName);
-    }
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(8)]
-    [InlineData(15)]
-    [InlineData(17)]
-    [InlineData(23)]
-    [InlineData(25)]
-    [InlineData(31)]
-    [InlineData(33)]
-    [InlineData(64)]
-    public void Constructor_InvalidKeySize_ThrowsArgumentException(int keySize)
-    {
-        var invalidKey = new byte[keySize];
-        RandomNumberGenerator.Fill(invalidKey);
+        var input = new AesEncryptionInput(passwordMemory);
 
-        var exception = Assert.Throws<ArgumentException>(() => new AesEncryptionInput(invalidKey));
-        Assert.Contains("Encryption key must be 16, 24, or 32 bytes for AES.", exception.Message);
-        Assert.Equal("encryptionKey", exception.ParamName);
+        Assert.Equal(1024, input.Password.Length);
+        Assert.Equal(password, input.Password.ToArray());
     }
 
     [Fact]
-    public void AesEncryptionInput_IsRecord_SupportsValueEquality()
+    public void Password_Property_ShouldReturnSameValueAsConstructorInput()
     {
-        var key = new byte[16];
-        RandomNumberGenerator.Fill(key);
+        var originalPassword = "secure-password-123"u8.ToArray();
 
-        var input1 = new AesEncryptionInput(key);
-        var input2 = new AesEncryptionInput(key);
+        var passwordMemory = new ReadOnlyMemory<byte>(originalPassword);
+        var input = new AesEncryptionInput(passwordMemory);
+
+        var retrievedPassword = input.Password;
+
+        Assert.Equal(originalPassword, retrievedPassword.ToArray());
+        Assert.True(passwordMemory.Span.SequenceEqual(retrievedPassword.Span));
+    }
+
+    [Fact]
+    public void Constructor_WithNullByteArrayPassword_ShouldThrowArgumentException()
+    {
+        var passwordMemory = new ReadOnlyMemory<byte>(null);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new AesEncryptionInput(passwordMemory));
+
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+    }
+
+    [Fact]
+    public void Constructor_WithZeroLengthArray_ShouldThrowArgumentException()
+    {
+        var emptyArray = Array.Empty<byte>();
+        var passwordMemory = new ReadOnlyMemory<byte>(emptyArray);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new AesEncryptionInput(passwordMemory));
+
+        Assert.Equal("Password cannot be empty. (Parameter 'password')", exception.Message);
+        Assert.Equal("password", exception.ParamName);
+    }
+
+    [Fact]
+    public void Equality_WithSamePassword_ShouldBeEqual()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory1 = new ReadOnlyMemory<byte>(password);
+        var passwordMemory2 = new ReadOnlyMemory<byte>(password);
+
+        var input1 = new AesEncryptionInput(passwordMemory1);
+        var input2 = new AesEncryptionInput(passwordMemory2);
 
         Assert.Equal(input1, input2);
         Assert.True(input1 == input2);
+        Assert.False(input1 != input2);
         Assert.Equal(input1.GetHashCode(), input2.GetHashCode());
     }
 
     [Fact]
-    public void AesEncryptionInput_DifferentKeys_NotEqual()
+    public void Equality_WithDifferentPassword_ShouldNotBeEqual()
     {
-        var key1 = new byte[16];
-        var key2 = new byte[16];
+        var password1 = "password1"u8.ToArray();
+        var password2 = "password2"u8.ToArray();
 
-        RandomNumberGenerator.Fill(key1);
-        RandomNumberGenerator.Fill(key2);
+        var passwordMemory1 = new ReadOnlyMemory<byte>(password1);
+        var passwordMemory2 = new ReadOnlyMemory<byte>(password2);
 
-        var input1 = new AesEncryptionInput(key1);
-        var input2 = new AesEncryptionInput(key2);
+        var input1 = new AesEncryptionInput(passwordMemory1);
+        var input2 = new AesEncryptionInput(passwordMemory2);
 
         Assert.NotEqual(input1, input2);
         Assert.False(input1 == input2);
+        Assert.True(input1 != input2);
     }
 
     [Fact]
-    public void EncryptionKey_ReturnsCorrectReference()
+    public void ToString_ShouldReturnReadableRepresentation()
     {
-        var originalKey = new byte[32];
-        RandomNumberGenerator.Fill(originalKey);
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new AesEncryptionInput(passwordMemory);
 
-        var input = new AesEncryptionInput(originalKey);
+        var stringRepresentation = input.ToString();
 
-        Assert.Equal(originalKey, input.EncryptionKey.Span.ToArray());
+        Assert.NotNull(stringRepresentation);
+        Assert.Contains("AesEncryptionInput", stringRepresentation);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    [InlineData(32)]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    [InlineData(512)]
+    public void Constructor_WithVariousPasswordLengths_ShouldCreateInstance(int passwordLength)
+    {
+        var password = new byte[passwordLength];
+        RandomNumberGenerator.Fill(password);
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.Equal(passwordLength, input.Password.Length);
+        Assert.Equal(password, input.Password.ToArray());
+    }
+
+    [Fact]
+    public void Constructor_WithSpecialCharacterPassword_ShouldCreateInstance()
+    {
+        var passwordString = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
+
+        var password = Encoding.UTF8.GetBytes(passwordString);
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.Equal(password, input.Password.ToArray());
+    }
+
+    [Fact]
+    public void Constructor_WithBinaryPassword_ShouldCreateInstance()
+    {
+        var password = new byte[] { 0x00, 0xFF, 0x7F, 0x80, 0x01, 0xFE };
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.Equal(password, input.Password.ToArray());
+        Assert.Equal(6, input.Password.Length);
+    }
+
+    [Fact]
+    public void Equality_WithNullReference_ShouldNotThrow()
+    {
+        var password = "test-password"u8.ToArray();
+
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new AesEncryptionInput(passwordMemory);
+
+        Assert.False(input.Equals(null));
     }
 }

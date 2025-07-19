@@ -32,13 +32,13 @@ internal sealed class EncryptionService(
             RandomNumberGenerator.Fill(nonceBuffer.AsSpan(0, NonceSize));
 
             await _encryptorBase.ExecuteEncryptionProcessAsync(
-                transferInstruction, input.EncryptionKey.Span.ToArray(), nonceBuffer.AsSpan(0, NonceSize).ToArray(),
+                transferInstruction, input.Password.Span.ToArray(), nonceBuffer.AsSpan(0, NonceSize).ToArray(),
                 _logger, cancellationToken);
         }
         finally
         {
             CryptoPool.Return(nonceBuffer);
-            CryptographicOperations.ZeroMemory(input.EncryptionKey.Span.ToArray());
+            CryptographicOperations.ZeroMemory(input.Password.Span.ToArray());
         }
     }
 }
