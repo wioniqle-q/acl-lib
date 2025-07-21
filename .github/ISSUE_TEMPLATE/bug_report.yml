@@ -1,0 +1,70 @@
+﻿name: Bug Report
+description: File a bug report to help our project improve
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: If we need more information, how should we contact you?
+      placeholder: ex. xxxx@xxx.com
+    validations:
+      required: false
+      
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Please describe your expectations regarding the outcome.
+      placeholder: Please share your observations with me.
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of Acl.Fs are you running?
+      options:
+        - Latest (main branch)
+      default: 0
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: dotnet-version
+    attributes:
+      label: .NET Version
+      description: What version of .NET are you using?
+      options:
+        - .NET 9.0
+        - .NET 8.0
+        - Other
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS are you running?
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+      
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Kindly copy and paste any relevant log output. This will be automatically formatted into code, so backticks are not necessary.
+      render: shell
