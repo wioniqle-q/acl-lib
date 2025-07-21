@@ -34,3 +34,6 @@ Rest assured that I take security seriously and will respond promptly to legitim
 All contributions are welcome! Whether you're fixing bugs, adding features, improving documentation, or assisting with
 testing.
 
+## Documentation
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and project updates.
