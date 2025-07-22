@@ -13,7 +13,7 @@ internal sealed class FileVersionValidator(ILogger<FileVersionValidator> logger)
     private static readonly FrozenDictionary<byte, IVersionValidationStrategy> Strategies =
         new Dictionary<byte, IVersionValidationStrategy>
         {
-            { 1, new V1ValidationStrategy() }
+            { 0, new V0ValidationStrategy() }
         }.ToFrozenDictionary();
 
     private readonly ILogger<FileVersionValidator>
@@ -46,12 +46,17 @@ internal sealed class FileVersionValidator(ILogger<FileVersionValidator> logger)
     {
         switch (majorVersion)
         {
-            case 0:
-                throw new VersionValidationException(ErrorMessages.MajorVersionCannotBeZero);
+            case 0 when minorVersion is 0:
+                throw new VersionValidationException(ErrorMessages.InvalidVersionZeroZero);
             case > VersionConstants.CurrentMajorVersion:
                 throw new VersionValidationException(
-                    string.Format(ErrorMessages.FileEncryptedWithNewerVersion, majorVersion, minorVersion,
-                        VersionConstants.CurrentMajorVersion, VersionConstants.CurrentMinorVersion));
+                    string.Format(ErrorMessages.FutureMajorVersionNotSupported,
+                        majorVersion, minorVersion, VersionConstants.CurrentMajorVersion));
         }
+
+        if (minorVersion > VersionConstants.CurrentMinorVersion)
+            throw new VersionValidationException(
+                string.Format(ErrorMessages.FutureMinorVersionNotSupported,
+                    majorVersion, minorVersion, VersionConstants.CurrentMinorVersion));
     }
 }

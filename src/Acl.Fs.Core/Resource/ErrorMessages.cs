@@ -9,8 +9,13 @@ internal static class ErrorMessages
 
     internal const string UnsupportedMajorVersion = "Unsupported major version: v{0}.{1}";
     internal const string VersionValidationFailed = "Version validation failed";
-    internal const string MajorVersionCannotBeZero = "Major version cannot be 0";
 
-    internal const string FileEncryptedWithNewerVersion =
-        "File encrypted with newer version (v{0}.{1}) than supported (v{2}.{3})";
+    internal const string FutureMajorVersionNotSupported =
+        "Future major version {0}.{1} is not supported. Current supported major version is {2}.";
+
+    internal const string FutureMinorVersionNotSupported =
+        "Future minor version {0}.{1} is not supported. Current supported minor version for major version {0} is {2}.";
+
+    internal const string InvalidVersionZeroZero =
+        "Invalid version 0.0. Version cannot be zero for both major and minor components.";
 }

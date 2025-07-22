@@ -15,7 +15,7 @@
         <PackageProjectUrl>https://github.com/wioniqle-q/acl-lib</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wioniqle-q/acl-lib</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <Version>0.1.0-beta</Version>
+        <Version>0.1.1-beta</Version>
         <PackageReleaseNotes>Initial beta release with core filesystem features.</PackageReleaseNotes>
     </PropertyGroup>
 

@@ -2,199 +2,110 @@
 using Acl.Fs.Core.Versioning;
 using Acl.Fs.Core.Versioning.Exceptions;
 using Microsoft.Extensions.Logging;
+using Moq;
 using static Acl.Fs.Constant.Versioning.VersionConstants;
 
 namespace Acl.Fs.Core.UnitTests.Versioning;
 
 public sealed class FileVersionValidatorTests
 {
-    private readonly TestLogger _logger;
     private readonly FileVersionValidator _validator;
 
     public FileVersionValidatorTests()
     {
-        _logger = new TestLogger();
-        _validator = new FileVersionValidator(_logger);
+        var mockLogger = new Mock<ILogger<FileVersionValidator>>();
+        _validator = new FileVersionValidator(mockLogger.Object);
     }
 
     [Fact]
-    public void ValidateVersion_CurrentVersion_DoesNotThrow()
+    public void Constructor_WhenLoggerIsNull_ShouldThrowArgumentNullException()
     {
-        var exception = Record.Exception(() => _validator.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion));
-        Assert.Null(exception);
-    }
-
-    [Fact]
-    public void ValidateVersion_ValidV1Minor0_DoesNotThrow()
-    {
-        var exception = Record.Exception(() => _validator.ValidateVersion(1, 0));
-        Assert.Null(exception);
-    }
-
-    [Fact]
-    public void ValidateVersion_ValidV1Minor1_DoesNotThrow()
-    {
-        var exception = Record.Exception(() => _validator.ValidateVersion(1, 1));
-        Assert.Null(exception);
-    }
-
-    [Fact]
-    public void ValidateVersion_ValidV1Minor255_DoesNotThrow()
-    {
-        var exception = Record.Exception(() => _validator.ValidateVersion(1, 255));
-        Assert.Null(exception);
-    }
-
-    [Fact]
-    public void ValidateVersion_MajorVersionZero_ThrowsVersionValidationException()
-    {
-        var exception = Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(0, 0));
-        Assert.Contains(ErrorMessages.MajorVersionCannotBeZero, exception.Message);
-    }
-
-    [Fact]
-    public void ValidateVersion_MajorVersionZeroWithMinor_ThrowsVersionValidationException()
-    {
-        var exception = Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(0, 5));
-        Assert.Contains(ErrorMessages.MajorVersionCannotBeZero, exception.Message);
+        var exception = Assert.Throws<ArgumentNullException>(() => new FileVersionValidator(null!));
+        Assert.Equal("logger", exception.ParamName);
     }
 
     [Theory]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(10)]
-    [InlineData(255)]
-    public void ValidateVersion_FutureMajorVersion_ThrowsVersionValidationException(byte futureMajorVersion)
-    {
-        var exception =
-            Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(futureMajorVersion, 0));
-        Assert.Contains(
-            $"File encrypted with newer version (v{futureMajorVersion}.0) than supported (v{CurrentMajorVersion}.{CurrentMinorVersion})",
-            exception.Message);
-    }
-
-    [Fact]
-    public void ValidateVersion_FutureMajorVersionWithMessage_ContainsCorrectVersions()
-    {
-        const byte futureMajor = 5;
-        const byte futureMinor = 3;
-
-        var exception =
-            Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(futureMajor, futureMinor));
-
-        Assert.Contains($"v{futureMajor}.{futureMinor}", exception.Message);
-        Assert.Contains($"v{CurrentMajorVersion}.{CurrentMinorVersion}", exception.Message);
-    }
-
-    [Theory]
-    [InlineData(100)]
-    [InlineData(50)]
-    [InlineData(25)]
-    public void ValidateVersion_UnsupportedMajorVersion_ThrowsVersionValidationException(byte unsupportedMajorVersion)
-    {
-        if (unsupportedMajorVersion <= CurrentMajorVersion)
-            return;
-
-        var exception =
-            Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(unsupportedMajorVersion, 0));
-        Assert.Contains(
-            $"File encrypted with newer version (v{unsupportedMajorVersion}.0) than supported (v{CurrentMajorVersion}.{CurrentMinorVersion})",
-            exception.Message);
-    }
-
-    [Fact]
-    public void ValidateVersion_UnsupportedMajorVersionMessage_ContainsVersionInfo()
-    {
-        const byte testMajor = 1;
-        const byte testMinor = 0;
-
-        var exception = Record.Exception(() => _validator.ValidateVersion(testMajor, testMinor));
-        Assert.Null(exception);
-
-        const byte unsupportedMajor = 99;
-        var unsupportedException =
-            Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(unsupportedMajor, testMinor));
-        Assert.Contains($"v{unsupportedMajor}.{testMinor}", unsupportedException.Message);
-    }
-
-    [Fact]
-    public void ValidateVersion_LogsErrorOnException()
-    {
-        try
-        {
-            _validator.ValidateVersion(0, 0);
-        }
-        catch (VersionValidationException)
-        {
-        }
-
-        Assert.False(_logger.HasLoggedError);
-    }
-
-    [Fact]
-    public void ValidateVersion_ValidVersionDoesNotLog()
-    {
-        _validator.ValidateVersion(1, 0);
-
-        Assert.False(_logger.HasLoggedError);
-    }
-
-    [Theory]
-    [InlineData(1, 0)]
-    [InlineData(1, 1)]
-    [InlineData(1, 10)]
-    [InlineData(1, 100)]
-    [InlineData(1, 255)]
-    public void ValidateVersion_SupportedVersions_DoNotThrow(byte majorVersion, byte minorVersion)
+    [InlineData(0, 1)] // Current beta version
+    public void ValidateVersion_WhenCurrentSupportedVersion_ShouldNotThrow(byte majorVersion, byte minorVersion)
     {
         var exception = Record.Exception(() => _validator.ValidateVersion(majorVersion, minorVersion));
         Assert.Null(exception);
     }
 
     [Fact]
-    public void ValidateVersion_RepeatedCalls_ConsistentBehavior()
+    public void ValidateVersion_WhenVersionIsZeroZero_ShouldThrowVersionValidationException()
     {
-        for (var i = 0; i < 5; i++)
-        {
-            var exception = Record.Exception(() => _validator.ValidateVersion(1, 0));
-            Assert.Null(exception);
-        }
+        var exception = Assert.Throws<VersionValidationException>(() =>
+            _validator.ValidateVersion(0, 0));
 
-        for (var i = 0; i < 5; i++) Assert.Throws<VersionValidationException>(() => _validator.ValidateVersion(0, 0));
+        Assert.Equal(ErrorMessages.InvalidVersionZeroZero, exception.Message);
     }
 
-    [Fact]
-    public void ValidateVersion_WithNullLogger_ThrowsArgumentNullException()
+    [Theory]
+    [InlineData(1, 0)] // Future major version
+    [InlineData(2, 0)]
+    [InlineData(255, 0)]
+    public void ValidateVersion_WhenFutureMajorVersion_ShouldThrowVersionValidationException(byte majorVersion,
+        byte minorVersion)
     {
-        Assert.Throws<ArgumentNullException>(() => new FileVersionValidator(null!));
+        var exception = Assert.Throws<VersionValidationException>(() =>
+            _validator.ValidateVersion(majorVersion, minorVersion));
+
+        var expectedMessage = string.Format(ErrorMessages.FutureMajorVersionNotSupported,
+            majorVersion, minorVersion, CurrentMajorVersion);
+        Assert.Equal(expectedMessage, exception.Message);
     }
 
-    [Fact]
-    public void Constructor_WithValidLogger_CreatesInstance()
+    [Theory]
+    [InlineData(0, 2)] // Future minor version for current major version
+    [InlineData(0, 3)]
+    [InlineData(0, 255)]
+    public void ValidateVersion_WhenFutureMinorVersionForCurrentMajor_ShouldThrowVersionValidationException(
+        byte majorVersion, byte minorVersion)
     {
-        var validator = new FileVersionValidator(_logger);
+        var exception = Assert.Throws<VersionValidationException>(() =>
+            _validator.ValidateVersion(majorVersion, minorVersion));
 
-        Assert.NotNull(validator);
+        var expectedMessage = string.Format(ErrorMessages.FutureMinorVersionNotSupported,
+            majorVersion, minorVersion, CurrentMinorVersion);
+        Assert.Equal(expectedMessage, exception.Message);
     }
 
-    private class TestLogger : ILogger<FileVersionValidator>
+    [Theory]
+    [InlineData(1, 0)] // Future major version with minor 0
+    [InlineData(1, 5)] // Future major version with any minor
+    [InlineData(2, 10)]
+    public void ValidateVersion_WhenFutureMajorVersionWithAnyMinor_ShouldThrowVersionValidationException(
+        byte majorVersion, byte minorVersion)
     {
-        public bool HasLoggedError { get; private set; }
+        var exception = Assert.Throws<VersionValidationException>(() =>
+            _validator.ValidateVersion(majorVersion, minorVersion));
 
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
-        {
-            return null;
-        }
+        var expectedMessage = string.Format(ErrorMessages.FutureMajorVersionNotSupported,
+            majorVersion, minorVersion, CurrentMajorVersion);
+        Assert.Equal(expectedMessage, exception.Message);
+    }
 
-        public bool IsEnabled(LogLevel logLevel)
-        {
-            return true;
-        }
+    [Theory]
+    [InlineData(0, 1)] // Valid cases
+    public void ValidateVersion_WhenValidVersion_ShouldCompleteSuccessfully(byte majorVersion, byte minorVersion)
+    {
+        var exception = Record.Exception(() => _validator.ValidateVersion(majorVersion, minorVersion));
+        Assert.Null(exception);
+    }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-            Func<TState, Exception?, string> formatter)
-        {
-            if (logLevel == LogLevel.Error) HasLoggedError = true;
-        }
+    [Theory]
+    [InlineData(0, 0)] // Invalid v0.0
+    [InlineData(0, 2)] // Future minor for v0.x
+    [InlineData(1, 0)] // Future major
+    [InlineData(255, 255)] // Way future version
+    public void ValidateVersion_WhenInvalidVersions_ShouldThrowVersionValidationException(byte majorVersion,
+        byte minorVersion)
+    {
+        var exception = Assert.Throws<VersionValidationException>(() =>
+            _validator.ValidateVersion(majorVersion, minorVersion));
+
+        Assert.NotNull(exception);
+        Assert.IsType<VersionValidationException>(exception);
     }
 }
