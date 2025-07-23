@@ -5,14 +5,14 @@ using static Acl.Fs.Constant.Storage.StorageConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Buffer;
 
-internal sealed class BufferManager(int metadataBufferSize) : IBufferManager
+internal sealed class BufferManager(int metadataBufferSize, int nonceSize) : IBufferManager
 {
     public byte[] Buffer { get; } = CryptoPool.Rent(BufferSize);
     public byte[] Plaintext { get; } = CryptoPool.Rent(BufferSize);
     public byte[] AlignedBuffer { get; } = CryptoPool.Rent(BufferSize);
     public byte[] MetadataBuffer { get; } = CryptoPool.Rent(metadataBufferSize);
     public byte[] Tag { get; } = CryptoPool.Rent(TagSize);
-    public byte[] ChunkNonce { get; } = CryptoPool.Rent(NonceSize);
+    public byte[] ChunkNonce { get; } = CryptoPool.Rent(nonceSize);
     public byte[] Salt { get; } = CryptoPool.Rent(SaltSize);
 
     public void Dispose()

@@ -87,7 +87,7 @@ internal sealed class BlockProcessor<T>(
                 bufferManager.Buffer.AsSpan(bytesRead, alignedSize - bytesRead).Clear();
 
             CryptoOperations.DeriveNonce(bufferManager.Salt, blockIndex, bufferManager.ChunkNonce);
-
+            
             EncryptBlock(
                 cryptoAlgorithm,
                 bufferManager.Buffer,

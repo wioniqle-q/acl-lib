@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.2.0-beta] - 2025-07-23
+
+### Added
+- **XChaCha20Poly1305 Encryption/Decryption Support** 
+  - 24-byte nonces (vs 12-byte for ChaCha20Poly1305)
+- **XChaCha20Poly1305 Service Extensions** - Dependency injection registration
+  - `AddXChaCha20Poly1305Factory()` extension method
+  - `AddXChaCha20Poly1305EncryptionServices()` extension method  
+  - `AddXChaCha20Poly1305DecryptionServices()` extension method
+
+### Enhanced
+- **BufferManager** - Updated to support multiple nonce sizes
+  - Constructor now accepts `nonceSize` parameter for algorithm-specific buffer allocation
+- **Crypto Constants** - Added `XChaCha20Poly1305NonceSize = 24` constant
+
+### Fixed
+
+### Technical Details
+- 24-byte nonces providing better resistance to nonce collision
+
+### Breaking Changes
+- BufferManager constructor signature updated to include `nonceSize` parameter
+- Existing BufferManager instantiations need to specify appropriate nonce size
+
 ## [0.1.1-beta] - 2025-07-22
 
 ### Fixed

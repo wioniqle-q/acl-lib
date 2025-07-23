@@ -1,4 +1,4 @@
-# Acl.Fs.Cli - ChaCha20Poly1305 File Encryption/Decryption CLI
+# Acl.Fs.Cli - XChaCha20Poly1305 File Encryption/Decryption CLI
 
 ## Usage
 

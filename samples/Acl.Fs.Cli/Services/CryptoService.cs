@@ -1,9 +1,9 @@
 ﻿using Acl.Fs.Cli.Abstractions.Services;
 using Acl.Fs.Cli.Configuration;
-using Acl.Fs.Core.Abstractions.Service.Decryption.ChaCha20Poly1305;
-using Acl.Fs.Core.Abstractions.Service.Encryption.ChaCha20Poly1305;
+using Acl.Fs.Core.Abstractions.Service.Decryption.XChaCha20Poly1305;
+using Acl.Fs.Core.Abstractions.Service.Encryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Models;
-using Acl.Fs.Core.Models.ChaCha20Poly1305;
+using Acl.Fs.Core.Models.XChaCha20Poly1305;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -131,7 +131,7 @@ internal sealed class CryptoService(
         Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
 
         var transferInstruction = new FileTransferInstruction(filePath, destinationPath);
-        var encryptionInput = new ChaCha20Poly1305EncryptionInput(password);
+        var encryptionInput = new XChaCha20Poly1305EncryptionInput(password);
 
         _logger.LogDebug("Encrypting file: {SourceFile} -> {DestinationFile}", filePath, destinationPath);
 
@@ -170,7 +170,7 @@ internal sealed class CryptoService(
         Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
 
         var transferInstruction = new FileTransferInstruction(filePath, destinationPath);
-        var decryptionInput = new ChaCha20Poly1305DecryptionInput(password);
+        var decryptionInput = new XChaCha20Poly1305DecryptionInput(password);
 
         _logger.LogDebug("Decrypting file: {SourceFile} -> {DestinationFile}", filePath, destinationPath);
 

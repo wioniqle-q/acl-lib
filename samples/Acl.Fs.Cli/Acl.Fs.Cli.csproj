@@ -12,7 +12,7 @@
     <PropertyGroup>
         <Authors>wioniqle-q</Authors>
         <Copyright>wioniqle-q</Copyright>
-        <Description>CLI tool for ChaCha20Poly1305 encryption/decryption</Description>
+        <Description>CLI tool for XChaCha20Poly1305 encryption/decryption</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     </PropertyGroup>
 

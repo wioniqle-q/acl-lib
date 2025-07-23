@@ -3,6 +3,7 @@
 internal static class CryptoConstants
 {
     internal const int NonceSize = 12;
+    internal const int XChaCha20Poly1305NonceSize = 24;
     internal const int TagSize = 16;
     internal const int Argon2IdSaltSize = 16;
     internal const int Argon2IdDegreeOfParallelism = 1;

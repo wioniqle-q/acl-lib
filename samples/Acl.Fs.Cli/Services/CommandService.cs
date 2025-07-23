@@ -15,7 +15,7 @@ internal sealed class CommandService(IOperationExecutor operationExecutor, ILogg
 
     public RootCommand CreateRootCommand()
     {
-        var rootCommand = new RootCommand("ChaCha20Poly1305 File Encryption/Decryption CLI");
+        var rootCommand = new RootCommand("XChaCha20Poly1305 File Encryption/Decryption CLI");
 
         var encryptedFolderOption = new Option<string>(
             ["--encrypted-folder", "-e"],

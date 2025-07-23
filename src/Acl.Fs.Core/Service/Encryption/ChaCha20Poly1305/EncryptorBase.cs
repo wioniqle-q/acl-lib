@@ -9,6 +9,7 @@ using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using Microsoft.Extensions.Logging;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Encryption.ChaCha20Poly1305;
 
@@ -56,7 +57,7 @@ internal sealed class EncryptorBase(
             var fileOptions = _alignmentPolicy.GetFileOptions();
             var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
-            using var bufferManager = new BufferManager(metadataBufferSize);
+            using var bufferManager = new BufferManager(metadataBufferSize, NonceSize);
 
             using var keyPreparation = _keyPreparationService.PrepareKey(key.AsSpan());
             using var chaCha20Poly1305 = _chaCha20Poly1305Factory.Create(keyPreparation.DerivedKey.ToArray());

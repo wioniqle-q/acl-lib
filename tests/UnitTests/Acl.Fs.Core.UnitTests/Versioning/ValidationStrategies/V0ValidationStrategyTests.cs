@@ -9,36 +9,44 @@ public sealed class V0ValidationStrategyTests
 {
     private readonly V0ValidationStrategy _strategy = new();
 
-    [Theory]
-    [InlineData(1)] // Current supported minor version
-    public void Validate_WhenCurrentSupportedMinorVersion_ShouldNotThrow(byte minorVersion)
+    [Fact]
+    public void Validate_WhenCurrentSupportedMinorVersions_ShouldNotThrow()
     {
-        var exception = Record.Exception(() => _strategy.Validate(minorVersion));
+        for (byte minorVersion = 1; minorVersion <= CurrentMinorVersion; minorVersion++)
+        {
+            var currentMinorVersion = minorVersion; 
+            var exception = Record.Exception(() => _strategy.Validate(currentMinorVersion));
+            Assert.Null(exception);
+        }
+    }
+
+    [Fact]
+    public void Validate_WhenMinorVersionIsZero_ShouldNotThrow()
+    {
+        var exception = Record.Exception(() => _strategy.Validate(0));
         Assert.Null(exception);
     }
 
-    [Theory]
-    [InlineData(0)] // Minor version 0 is not supported for v0.x
-    public void Validate_WhenMinorVersionIsZero_ShouldNotThrow(byte minorVersion)
+    [Fact]
+    public void Validate_WhenFutureMinorVersions_ShouldThrowVersionValidationException()
     {
-        var exception = Record.Exception(() => _strategy.Validate(minorVersion));
-        Assert.Null(exception);
-    }
+        var futureVersions = new byte[]
+        {
+            CurrentMinorVersion + 1,
+            CurrentMinorVersion + 2,
+            CurrentMinorVersion + 10,
+            255 
+        };
 
-    [Theory]
-    [InlineData(2)] // Future minor version
-    [InlineData(3)]
-    [InlineData(5)]
-    [InlineData(10)]
-    [InlineData(255)] // Maximum byte value
-    public void Validate_WhenFutureMinorVersion_ShouldThrowVersionValidationException(byte minorVersion)
-    {
-        var exception = Assert.Throws<VersionValidationException>(() =>
-            _strategy.Validate(minorVersion));
+        foreach (var minorVersion in futureVersions)
+        {
+            var exception = Assert.Throws<VersionValidationException>(() =>
+                _strategy.Validate(minorVersion));
 
-        var expectedMessage = string.Format(ErrorMessages.FutureMinorVersionNotSupported,
-            0, minorVersion, CurrentMinorVersion);
-        Assert.Equal(expectedMessage, exception.Message);
+            var expectedMessage = string.Format(ErrorMessages.FutureMinorVersionNotSupported,
+                0, minorVersion, CurrentMinorVersion);
+            Assert.Equal(expectedMessage, exception.Message);
+        }
     }
 
     [Fact]
@@ -49,66 +57,77 @@ public sealed class V0ValidationStrategyTests
     }
 
     [Fact]
-    public void Validate_WhenMinorVersionIsOneLessThanCurrent_ShouldNotThrow()
+    public void Validate_BoundaryConditions_ShouldWorkCorrectly()
     {
-        // Test boundary condition: current minor version - 1
-        const byte minorVersion = CurrentMinorVersion - 1;
-
-        var exception = Record.Exception(() => _strategy.Validate(minorVersion));
+        // Current minor version should be valid
+        var exception = Record.Exception(() => _strategy.Validate(CurrentMinorVersion));
         Assert.Null(exception);
+
+        // Previous minor version should be valid (if > 0)
+        if (CurrentMinorVersion > 1)
+        {
+            var previousException = Record.Exception(() => _strategy.Validate(CurrentMinorVersion - 1));
+            Assert.Null(previousException);
+        }
+        
+        var futureException = Assert.Throws<VersionValidationException>(() =>
+            _strategy.Validate(CurrentMinorVersion + 1));
+        Assert.NotNull(futureException);
     }
 
     [Fact]
-    public void Validate_WhenMinorVersionIsOneMoreThanCurrent_ShouldThrowVersionValidationException()
+    public void Validate_WhenFutureMinorVersion_ShouldThrowWithCorrectErrorMessage()
     {
-        // Test boundary condition: current minor version + 1
-        const byte minorVersion = CurrentMinorVersion + 1;
+        const byte futureMinorVersion = CurrentMinorVersion + 1;
 
         var exception = Assert.Throws<VersionValidationException>(() =>
-            _strategy.Validate(minorVersion));
+            _strategy.Validate(futureMinorVersion));
+
+        Assert.Contains("0", exception.Message); // Major version
+        Assert.Contains(futureMinorVersion.ToString(), exception.Message); // Future minor version
+        Assert.Contains(CurrentMinorVersion.ToString(), exception.Message); // Current minor version
 
         var expectedMessage = string.Format(ErrorMessages.FutureMinorVersionNotSupported,
-            0, minorVersion, CurrentMinorVersion);
-        Assert.Equal(expectedMessage, exception.Message);
-    }
-
-    [Theory]
-    [InlineData(2, "0", "2", "1")] // v0.2 when current is v0.1
-    [InlineData(5, "0", "5", "1")] // v0.5 when current is v0.1
-    [InlineData(255, "0", "255", "1")] // v0.255 when current is v0.1
-    public void Validate_WhenFutureMinorVersion_ShouldThrowWithCorrectErrorMessage(
-        byte minorVersion, string expectedMajor, string expectedMinor, string expectedCurrent)
-    {
-        var exception = Assert.Throws<VersionValidationException>(() =>
-            _strategy.Validate(minorVersion));
-
-        Assert.Contains(expectedMajor, exception.Message);
-        Assert.Contains(expectedMinor, exception.Message);
-        Assert.Contains(expectedCurrent, exception.Message);
-
-        var expectedMessage = string.Format(ErrorMessages.FutureMinorVersionNotSupported,
-            0, minorVersion, CurrentMinorVersion);
+            0, futureMinorVersion, CurrentMinorVersion);
         Assert.Equal(expectedMessage, exception.Message);
     }
 
     [Fact]
     public void Validate_ExceptionType_ShouldBeVersionValidationException()
     {
+        const byte futureMinorVersion = CurrentMinorVersion + 1;
+
         var exception = Assert.Throws<VersionValidationException>(() =>
-            _strategy.Validate(2));
+            _strategy.Validate(futureMinorVersion));
 
         Assert.IsType<VersionValidationException>(exception);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void Validate_WhenValidMinorVersions_ShouldCompleteSuccessfully(byte minorVersion)
+    [Fact]
+    public void Validate_WhenValidMinorVersions_ShouldCompleteSuccessfully()
     {
-        // Only test versions that are <= CurrentMinorVersion
-        if (minorVersion > CurrentMinorVersion) return;
+        for (byte minorVersion = 0; minorVersion <= CurrentMinorVersion; minorVersion++)
+        {
+            var currentMinorVersion = minorVersion; 
+            var exception = Record.Exception(() => _strategy.Validate(currentMinorVersion));
+            Assert.Null(exception);
+        }
+    }
 
-        var exception = Record.Exception(() => _strategy.Validate(minorVersion));
-        Assert.Null(exception);
+    [Fact]
+    public void Validate_VersionProgression_ShouldBeConsistent()
+    {
+        Assert.True(CurrentMinorVersion >= 1, "CurrentMinorVersion should be at least 1");
+        
+        for (byte version = 1; version <= CurrentMinorVersion; version++)
+        {
+            var currentVersion = version; 
+            var exception = Record.Exception(() => _strategy.Validate(currentVersion));
+            Assert.Null(exception);
+        }
+
+        var futureException = Assert.Throws<VersionValidationException>(() =>
+            _strategy.Validate((CurrentMinorVersion + 1)));
+        Assert.NotNull(futureException);
     }
 }

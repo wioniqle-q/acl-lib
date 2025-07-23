@@ -9,6 +9,7 @@ using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Service.Decryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using Microsoft.Extensions.Logging;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.AesGcm;
 
@@ -55,7 +56,7 @@ internal sealed class DecryptorBase(
             var fileOptions = _alignmentPolicy.GetFileOptions();
             var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
 
-            using var bufferManager = new BufferManager(metadataBufferSize);
+            using var bufferManager = new BufferManager(metadataBufferSize, NonceSize);
 
             await using var sourceStream =
                 CryptoPrimitives.CreateInputStream(instruction.SourcePath, fileOptions, logger);

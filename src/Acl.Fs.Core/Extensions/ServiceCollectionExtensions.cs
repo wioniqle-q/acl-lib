@@ -40,4 +40,11 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddXChaCha20Poly1305Factory(this IServiceCollection services)
+    {
+        services.TryAddSingleton<IXChaCha20Poly1305Factory, XChaCha20Poly1305Factory>();
+
+        return services;
+    }
 }

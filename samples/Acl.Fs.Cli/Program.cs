@@ -39,9 +39,9 @@ internal sealed class Program
         builder.Services.AddSerilogLogging(logsDirectory);
 
         builder.Services.AddAclFsCore();
-        builder.Services.AddChaCha20Poly1305Factory();
-        builder.Services.AddChaCha20Poly1305EncryptionServices();
-        builder.Services.AddChaCha20Poly1305DecryptionServices();
+        builder.Services.AddXChaCha20Poly1305Factory();
+        builder.Services.AddXChaCha20Poly1305EncryptionServices();
+        builder.Services.AddXChaCha20Poly1305DecryptionServices();
         builder.Services.AddDecryptionComponents();
         builder.Services.AddEncryptionComponents();
         builder.Services.AddAuditLogger();

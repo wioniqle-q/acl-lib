@@ -17,7 +17,7 @@ internal sealed class Argon2KeyDerivationService : IKeyDerivationService
     public byte[] DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, int outputLength)
     {
         var derivedKey = new byte[outputLength];
-        
+
         Span<byte> argon2Salt = stackalloc byte[SaltSize];
         salt.CopyTo(argon2Salt);
 
