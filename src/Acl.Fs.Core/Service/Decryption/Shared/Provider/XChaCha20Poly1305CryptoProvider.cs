@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Security.Cryptography;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Processor;
+using Acl.Fs.Core.Resource;
 using NSec.Cryptography;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
@@ -39,6 +40,6 @@ internal sealed class XChaCha20Poly1305CryptoProvider : ICryptoProvider<Key>
             plaintext.AsSpan(0, blockSize));
 
         if (success is not true)
-            throw new CryptographicException("XChaCha20Poly1305 decryption failed - authentication failed");
+            throw new CryptographicException(ErrorMessages.DecryptionFailed);
     }
 }
