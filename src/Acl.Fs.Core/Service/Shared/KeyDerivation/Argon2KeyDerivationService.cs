@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Acl.Fs.Constant.Cryptography;
+﻿using Acl.Fs.Constant.Cryptography;
 using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using NSec.Cryptography;
 
@@ -21,19 +20,12 @@ internal sealed class Argon2KeyDerivationService : IKeyDerivationService
         Span<byte> argon2Salt = stackalloc byte[SaltSize];
         salt.CopyTo(argon2Salt);
 
-        try
-        {
-            Algorithm.DeriveBytes(
-                password,
-                argon2Salt,
-                derivedKey.AsSpan());
+        Algorithm.DeriveBytes(
+            password,
+            argon2Salt,
+            derivedKey.AsSpan());
 
-            return derivedKey;
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(argon2Salt);
-        }
+        return derivedKey;
     }
 
     public int SaltSize => Algorithm.MaxSaltSize;
