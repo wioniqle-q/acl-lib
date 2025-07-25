@@ -1,4 +1,5 @@
-﻿using Acl.Fs.Core.Abstractions;
+﻿using Acl.Fs.Constant.Versioning;
+using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Factory;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Metadata;
@@ -6,6 +7,7 @@ using Acl.Fs.Core.Abstractions.Service.Encryption.Shared.Processor;
 using Acl.Fs.Core.Abstractions.Service.Encryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
+using Acl.Fs.Core.Policy;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using Microsoft.Extensions.Logging;
@@ -56,7 +58,9 @@ internal sealed class EncryptorBase(
             await _auditService.AuditEncryptionStarted("XChaCha20Poly1305", cancellationToken);
 
             var fileOptions = _alignmentPolicy.GetFileOptions();
-            var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+            var metadataBufferSize = _alignmentPolicy is AlignedPolicy
+                ? VersionConstants.XChaCha20Poly1305HeaderSize
+                : VersionConstants.XChaCha20Poly1305UnalignedHeaderSize;
 
             using var bufferManager = new BufferManager(metadataBufferSize, XChaCha20Poly1305NonceSize);
 
@@ -75,7 +79,7 @@ internal sealed class EncryptorBase(
 
             _metadataService.PrepareMetadata(nonce, sourceStream.Length, bufferManager.Salt,
                 keyPreparation.Salt.ToArray(),
-                bufferManager.MetadataBuffer, metadataBufferSize);
+                bufferManager.MetadataBuffer, metadataBufferSize, XChaCha20Poly1305NonceSize);
             await _auditService.AuditHeaderPrepared(cancellationToken);
 
             await _metadataService.WriteHeaderAsync(destinationStream, bufferManager.MetadataBuffer, metadataBufferSize,

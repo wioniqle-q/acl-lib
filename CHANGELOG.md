@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.3.0-beta] - 2025-07-26
+
+### Fixed
+- **XChaCha20Poly1305 Nonce Size Handling** - planned fix for proper 24-byte nonce support
+  - Fixed `CryptoOperations.DeriveNonce` to accept nonce size parameter
+  - Fixed `MetadataService.PrepareMetadata` to handle variable nonce sizes
+  - Fixed `HeaderReader.ReadHeaderAsync` to support XChaCha20Poly1305 24-byte nonces
+  - Fixed `BlockCalculator.CalculateTotalBlocks` to use actual metadata buffer sizes
+
+### Enhanced
+- **BufferManager** - Added `NonceSize` property to both encryption and decryption buffer managers
+- **BlockProcessor** - Updated to use dynamic nonce sizes from BufferManager
+- **Version Constants** - Added XChaCha20Poly1305-specific header size calculations
+
+### Breaking Changes
+- **v0.2.x files incompatible** - XChaCha20Poly1305 files encrypted with v0.2.x cannot be decrypted with v0.3.x due to nonce size fix
+- **IBufferManager interface** - Added `NonceSize` property (affects custom implementations)
+- **IBlockProcessor interface** - Updated `ProcessBlockAsync` signature to include `nonceSize` parameter for decryption
+- **IMetadataService interface** - Added overload for `PrepareMetadata` with `nonceSize` parameter  
+- **IHeaderReader interface** - Added overload for `ReadHeaderAsync` with `nonceSize` parameter
+
+### Technical Details
+
 ## [0.2.0-beta] - 2025-07-23
 
 ### Added

@@ -13,6 +13,7 @@ internal sealed class BufferManager(int metadataBufferSize, int nonceSize) : IBu
     public byte[] Tag { get; } = CryptoPool.Rent(TagSize);
     public byte[] ChunkNonce { get; } = CryptoPool.Rent(nonceSize);
     public byte[] Salt { get; } = CryptoPool.Rent(SaltSize);
+    public int NonceSize { get; } = nonceSize;
 
     public void Dispose()
     {

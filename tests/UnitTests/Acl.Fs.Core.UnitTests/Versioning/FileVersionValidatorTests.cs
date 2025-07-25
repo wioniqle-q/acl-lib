@@ -92,7 +92,7 @@ public sealed class FileVersionValidatorTests
     {
         for (byte minorVersion = 1; minorVersion <= CurrentMinorVersion; minorVersion++)
         {
-            var currentMinorVersion = minorVersion; 
+            var currentMinorVersion = minorVersion;
             var exception =
                 Record.Exception(() => _validator.ValidateVersion(CurrentMajorVersion, currentMinorVersion));
             Assert.Null(exception);

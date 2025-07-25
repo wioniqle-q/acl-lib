@@ -18,6 +18,18 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
         int metadataBufferSize,
         CancellationToken cancellationToken)
     {
+        return await ReadHeaderAsync(sourceStream, metadataBuffer, chaCha20Salt, metadataBufferSize, NonceSize,
+            cancellationToken);
+    }
+
+    public async Task<Abstractions.Service.Decryption.Shared.Header.Header> ReadHeaderAsync(
+        System.IO.Stream sourceStream,
+        byte[] metadataBuffer,
+        byte[] chaCha20Salt,
+        int metadataBufferSize,
+        int nonceSize,
+        CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
 
         await sourceStream.ReadExactlyAsync(
@@ -33,8 +45,8 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
 
         var offset = VersionConstants.VersionHeaderSize;
 
-        var nonce = metadataSpan.Slice(offset, NonceSize);
-        offset += NonceSize;
+        var nonce = metadataSpan.Slice(offset, nonceSize);
+        offset += nonceSize;
 
         var originalSize = BinaryPrimitives.ReadInt64LittleEndian(metadataSpan[offset..]);
         offset += sizeof(long);
@@ -45,7 +57,7 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
         var argon2Salt = new byte[Argon2IdSaltSize];
         metadataSpan.Slice(offset, Argon2IdSaltSize).CopyTo(argon2Salt);
 
-        nonce.CopyTo(metadataBuffer.AsSpan(0, NonceSize));
+        nonce.CopyTo(metadataBuffer.AsSpan(0, nonceSize));
 
         return new Abstractions.Service.Decryption.Shared.Header.Header(majorVersion, minorVersion, originalSize,
             nonce.ToArray(), chaCha20Salt, argon2Salt);

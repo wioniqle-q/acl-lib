@@ -26,5 +26,6 @@ internal interface IBlockProcessor<in T>
         long blockIndex,
         long processedBytes,
         long originalSize,
+        int nonceSize,
         CancellationToken cancellationToken);
 }

@@ -14,7 +14,7 @@ public sealed class V0ValidationStrategyTests
     {
         for (byte minorVersion = 1; minorVersion <= CurrentMinorVersion; minorVersion++)
         {
-            var currentMinorVersion = minorVersion; 
+            var currentMinorVersion = minorVersion;
             var exception = Record.Exception(() => _strategy.Validate(currentMinorVersion));
             Assert.Null(exception);
         }
@@ -35,7 +35,7 @@ public sealed class V0ValidationStrategyTests
             CurrentMinorVersion + 1,
             CurrentMinorVersion + 2,
             CurrentMinorVersion + 10,
-            255 
+            255
         };
 
         foreach (var minorVersion in futureVersions)
@@ -69,7 +69,7 @@ public sealed class V0ValidationStrategyTests
             var previousException = Record.Exception(() => _strategy.Validate(CurrentMinorVersion - 1));
             Assert.Null(previousException);
         }
-        
+
         var futureException = Assert.Throws<VersionValidationException>(() =>
             _strategy.Validate(CurrentMinorVersion + 1));
         Assert.NotNull(futureException);
@@ -108,7 +108,7 @@ public sealed class V0ValidationStrategyTests
     {
         for (byte minorVersion = 0; minorVersion <= CurrentMinorVersion; minorVersion++)
         {
-            var currentMinorVersion = minorVersion; 
+            var currentMinorVersion = minorVersion;
             var exception = Record.Exception(() => _strategy.Validate(currentMinorVersion));
             Assert.Null(exception);
         }
@@ -118,16 +118,16 @@ public sealed class V0ValidationStrategyTests
     public void Validate_VersionProgression_ShouldBeConsistent()
     {
         Assert.True(CurrentMinorVersion >= 1, "CurrentMinorVersion should be at least 1");
-        
+
         for (byte version = 1; version <= CurrentMinorVersion; version++)
         {
-            var currentVersion = version; 
+            var currentVersion = version;
             var exception = Record.Exception(() => _strategy.Validate(currentVersion));
             Assert.Null(exception);
         }
 
         var futureException = Assert.Throws<VersionValidationException>(() =>
-            _strategy.Validate((CurrentMinorVersion + 1)));
+            _strategy.Validate(CurrentMinorVersion + 1));
         Assert.NotNull(futureException);
     }
 }

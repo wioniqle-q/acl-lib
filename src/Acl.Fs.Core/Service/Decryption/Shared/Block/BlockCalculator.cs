@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Acl.Fs.Constant.Versioning;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 using static Acl.Fs.Constant.Storage.StorageConstants;
 
@@ -10,12 +9,16 @@ internal static class BlockCalculator
     internal static long CalculateTotalBlocks(long encryptedStreamLength, int metadataBufferSize, int bufferSize)
     {
         var isSectorAligned = metadataBufferSize is SectorSize;
-        var headerLen = isSectorAligned ? SectorSize : VersionConstants.UnalignedHeaderSize;
+        var headerLen = isSectorAligned ? SectorSize : metadataBufferSize;
 
         var blockMetadataSize = isSectorAligned ? SectorSize : TagSize;
         var blockSize = blockMetadataSize + bufferSize;
 
         var dataLength = encryptedStreamLength - headerLen;
+
+        if (dataLength <= 0)
+            return 0;
+
         return (dataLength + blockSize - 1) / blockSize;
     }
 

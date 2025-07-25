@@ -1,4 +1,5 @@
-﻿using Acl.Fs.Core.Abstractions;
+﻿using Acl.Fs.Constant.Versioning;
+using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Factory;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Audit;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Header;
@@ -6,6 +7,7 @@ using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Processor;
 using Acl.Fs.Core.Abstractions.Service.Decryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
+using Acl.Fs.Core.Policy;
 using Acl.Fs.Core.Service.Decryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
 using Microsoft.Extensions.Logging;
@@ -55,7 +57,9 @@ internal sealed class DecryptorBase(
             await _auditService.AuditDecryptionStarted("XChaCha20Poly1305", cancellationToken);
 
             var fileOptions = _alignmentPolicy.GetFileOptions();
-            var metadataBufferSize = _alignmentPolicy.GetMetadataBufferSize();
+            var metadataBufferSize = _alignmentPolicy is AlignedPolicy
+                ? VersionConstants.XChaCha20Poly1305HeaderSize
+                : VersionConstants.XChaCha20Poly1305UnalignedHeaderSize;
 
             using var bufferManager = new BufferManager(metadataBufferSize, XChaCha20Poly1305NonceSize);
 
@@ -72,6 +76,7 @@ internal sealed class DecryptorBase(
                 bufferManager.MetadataBuffer,
                 bufferManager.Salt,
                 metadataBufferSize,
+                XChaCha20Poly1305NonceSize,
                 cancellationToken);
 
             await _auditService.AuditHeaderRead(cancellationToken);

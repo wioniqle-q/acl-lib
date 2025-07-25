@@ -6,6 +6,7 @@ using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Validation;
 using Acl.Fs.Core.Service.Decryption.Shared.Processor;
 using Acl.Fs.Core.Service.Decryption.Shared.Validation;
 using Moq;
+using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.UnitTests.Service.Decryption.Shared.Processor;
 
@@ -84,6 +85,7 @@ public sealed class BlockProcessorTests
             blockIndex,
             processedBytes,
             originalSize,
+            NonceSize,
             cancellationToken
         );
 
@@ -150,6 +152,7 @@ public sealed class BlockProcessorTests
             blockIndex,
             processedBytes,
             originalSize,
+            NonceSize,
             cancellationToken
         );
 
@@ -216,6 +219,7 @@ public sealed class BlockProcessorTests
             blockIndex,
             processedBytes,
             originalSize,
+            NonceSize,
             cancellationToken
         ));
     }

@@ -8,4 +8,5 @@ internal interface IBufferManager : IDisposable
     byte[] Tag { get; }
     byte[] ChunkNonce { get; }
     byte[] Salt { get; }
+    int NonceSize { get; }
 }

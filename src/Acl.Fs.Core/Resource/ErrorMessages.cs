@@ -8,7 +8,7 @@ internal static class ErrorMessages
     internal const string InvalidKeySize = "Invalid key size. Key size must be 16, 24, or 32 bytes.";
 
     internal const string DecryptionFailed = "XChaCha20Poly1305 decryption failed - authentication failed";
-    
+
     internal const string UnsupportedMajorVersion = "Unsupported major version: v{0}.{1}";
     internal const string VersionValidationFailed = "Version validation failed";
 

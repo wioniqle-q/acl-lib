@@ -84,6 +84,7 @@ internal sealed class BlockProcessor<T>(
                     blockIndex,
                     processedBytes,
                     header.OriginalSize,
+                    resources.NonceSize,
                     cancellationToken);
 
                 processedBytes = _blockValidator.ValidateAndCalculateBytes(
@@ -115,6 +116,7 @@ internal sealed class BlockProcessor<T>(
         long blockIndex,
         long processedBytes,
         long originalSize,
+        int nonceSize,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -122,7 +124,7 @@ internal sealed class BlockProcessor<T>(
         var isLastBlock = BlockCalculator.IsLastBlock(processedBytes, bytesRead, originalSize);
         var blockSize = _alignmentPolicy.CalculateProcessingSize(bytesRead, isLastBlock);
 
-        CryptoOperations.DeriveNonce(salt, blockIndex, chunkNonce);
+        CryptoOperations.DeriveNonce(salt, blockIndex, chunkNonce, nonceSize);
 
         DecryptBlock(cryptoAlgorithm, buffer, plaintext, tag, chunkNonce, salt, blockSize, blockIndex);
 

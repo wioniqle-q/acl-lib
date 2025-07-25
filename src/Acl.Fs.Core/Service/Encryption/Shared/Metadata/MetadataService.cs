@@ -12,6 +12,13 @@ internal sealed class MetadataService : IMetadataService
         byte[] metadataBuffer,
         int metadataBufferSize)
     {
+        PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt, metadataBuffer, metadataBufferSize, NonceSize);
+    }
+
+    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, byte[] argon2Salt,
+        byte[] metadataBuffer,
+        int metadataBufferSize, int nonceSize)
+    {
         CryptoOperations.PrecomputeSalt(nonce, chaCha20Salt);
 
         metadataBuffer.AsSpan(0, metadataBufferSize).Clear();
@@ -21,8 +28,8 @@ internal sealed class MetadataService : IMetadataService
 
         var offset = VersionConstants.VersionHeaderSize;
 
-        nonce.AsSpan(0, NonceSize).CopyTo(metadataBuffer.AsSpan(offset));
-        offset += NonceSize;
+        nonce.AsSpan(0, nonceSize).CopyTo(metadataBuffer.AsSpan(offset));
+        offset += nonceSize;
 
         BinaryPrimitives.WriteInt64LittleEndian(metadataBuffer.AsSpan(offset), originalSize);
         offset += sizeof(long);
