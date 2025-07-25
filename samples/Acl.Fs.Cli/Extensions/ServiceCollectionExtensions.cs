@@ -15,6 +15,7 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<IOperationExecutor, OperationExecutor>();
         services.AddScoped<ICommandService, CommandService>();
         services.AddScoped<FileOperationValidator>();
+        services.AddScoped<IOperationResultHandler, OperationResultHandler>();
 
         return services;
     }

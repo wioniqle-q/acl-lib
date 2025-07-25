@@ -1,5 +1,6 @@
 ﻿using Acl.Fs.Cli.Abstractions.Services;
 using Acl.Fs.Cli.Configuration;
+using Acl.Fs.Cli.Models;
 using Acl.Fs.Core.Abstractions.Service.Decryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Abstractions.Service.Encryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Models;
@@ -15,7 +16,8 @@ internal sealed class CryptoService(
     IOptions<CryptoSettings> settings,
     ILogger<CryptoService> logger,
     FileOperationValidator validator,
-    IGlobalCancellationManager globalCancellationManager) : ICryptoService
+    IGlobalCancellationManager globalCancellationManager,
+    IOperationResultHandler operationResultHandler) : ICryptoService
 {
     private readonly IDecryptionService _decryptionService =
         decryptionService ?? throw new ArgumentNullException(nameof(decryptionService));
@@ -27,6 +29,10 @@ internal sealed class CryptoService(
         globalCancellationManager ?? throw new ArgumentNullException(nameof(globalCancellationManager));
 
     private readonly ILogger<CryptoService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private readonly IOperationResultHandler _operationResultHandler =
+        operationResultHandler ?? throw new ArgumentNullException(nameof(operationResultHandler));
+
     private readonly SemaphoreSlim _semaphore = new(settings.Value.MaxConcurrency, settings.Value.MaxConcurrency);
     private readonly CryptoSettings _settings = settings.Value ?? throw new ArgumentNullException(nameof(settings));
 
@@ -65,23 +71,32 @@ internal sealed class CryptoService(
     {
         if (Directory.Exists(encryptedFolder) is not true)
             throw new DirectoryNotFoundException($"Encrypted folder not found: {encryptedFolder}");
-        if (Directory.GetFiles(encryptedFolder, $"{_settings.DefaultEncryptedPrefix}*", SearchOption.AllDirectories)
-                .Length is 0)
+
+        var files = Directory.GetFiles(encryptedFolder, $"{_settings.DefaultEncryptedPrefix}*",
+            SearchOption.AllDirectories);
+        if (files.Length is 0)
             throw new FileNotFoundException($"No encrypted files found in: {encryptedFolder}");
 
         Directory.CreateDirectory(decryptedFolder);
 
-        var files = Directory.GetFiles(encryptedFolder, $"{_settings.DefaultEncryptedPrefix}*",
-            SearchOption.AllDirectories);
-        _logger.LogInformation("Starting decryption of {FileCount} files from {EncryptedFolder} to {DecryptedFolder}",
-            files.Length, encryptedFolder, decryptedFolder);
-
         var combinedToken = _globalCancellationManager.CombineWith(cancellationToken);
-        var tasks = files.Select(file =>
-            DecryptFileWithSemaphoreAsync(file, encryptedFolder, decryptedFolder, password, combinedToken));
-        await Task.WhenAll(tasks);
 
-        _logger.LogInformation("Decryption completed successfully");
+        var request = new OperationRequest
+        {
+            Files = files,
+            ProcessFileAsync = async (file, token) =>
+            {
+                await DecryptFileWithSemaphoreAsync(file, encryptedFolder, decryptedFolder, password, token, false);
+            },
+            CancellationToken = combinedToken,
+            OperationName = "Decryption",
+            CleanupPath = decryptedFolder,
+            MaxConsecutiveFailures = 2,
+            MaxFailureRatio = 0.8,
+            MinFilesBeforeRatioCheck = 1
+        };
+
+        await _operationResultHandler.HandleOperationAsync(request);
     }
 
     private async Task EncryptFileWithSemaphoreAsync(string filePath, string sourceFolder, string destinationFolder,
@@ -101,14 +116,17 @@ internal sealed class CryptoService(
     }
 
     private async Task DecryptFileWithSemaphoreAsync(string filePath, string encryptedFolder, string decryptedFolder,
-        ReadOnlyMemory<byte> password, CancellationToken cancellationToken)
+        ReadOnlyMemory<byte> password, CancellationToken cancellationToken, bool useGlobalCancellation = true)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            await _globalCancellationManager.ExecuteWithCancellationOnCryptoErrorAsync(
-                token => DecryptFileAsync(filePath, encryptedFolder, decryptedFolder, password, token),
-                cancellationToken);
+            if (useGlobalCancellation)
+                await _globalCancellationManager.ExecuteWithCancellationOnCryptoErrorAsync(
+                    token => DecryptFileAsync(filePath, encryptedFolder, decryptedFolder, password, token),
+                    cancellationToken);
+            else
+                await DecryptFileAsync(filePath, encryptedFolder, decryptedFolder, password, cancellationToken);
         }
         finally
         {

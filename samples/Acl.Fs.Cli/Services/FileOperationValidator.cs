@@ -16,27 +16,6 @@ internal sealed class FileOperationValidator(ILogger<FileOperationValidator> log
         ValidateDiskSpace(sourceFilePath, destinationPath, isEncryption);
     }
 
-    private void ValidateDestinationFile(string destinationPath, CryptoSettings settings)
-    {
-        if (File.Exists(destinationPath) is not true) return;
-        if (settings.OverwriteExisting is not true)
-            throw new InvalidOperationException($"Destination file already exists: {destinationPath}");
-
-        _logger.LogWarning("Overwriting existing file: {DestinationPath}", destinationPath);
-    }
-
-    private static void ValidateDiskSpace(string sourceFilePath, string destinationPath, bool isEncryption = false)
-    {
-        var sourceFileInfo = new FileInfo(sourceFilePath);
-        var destinationDrive = new DriveInfo(Path.GetPathRoot(destinationPath)!);
-
-        var requiredSpace = isEncryption ? sourceFileInfo.Length * 2 : sourceFileInfo.Length;
-
-        if (destinationDrive.AvailableFreeSpace < requiredSpace)
-            throw new InvalidOperationException(
-                $"Insufficient disk space on {destinationDrive.Name}. Required: {requiredSpace:N0} bytes, Available: {destinationDrive.AvailableFreeSpace:N0} bytes");
-    }
-
     public void CleanupFailedOperation(string destinationPath, string? protectedRootPath = null)
     {
         try
@@ -98,6 +77,27 @@ internal sealed class FileOperationValidator(ILogger<FileOperationValidator> log
         {
             _logger.LogError(ex, "Failed to cleanup after operation failure for: {DestinationPath}", destinationPath);
         }
+    }
+
+    private void ValidateDestinationFile(string destinationPath, CryptoSettings settings)
+    {
+        if (File.Exists(destinationPath) is not true) return;
+        if (settings.OverwriteExisting is not true)
+            throw new InvalidOperationException($"Destination file already exists: {destinationPath}");
+
+        _logger.LogWarning("Overwriting existing file: {DestinationPath}", destinationPath);
+    }
+
+    private static void ValidateDiskSpace(string sourceFilePath, string destinationPath, bool isEncryption = false)
+    {
+        var sourceFileInfo = new FileInfo(sourceFilePath);
+        var destinationDrive = new DriveInfo(Path.GetPathRoot(destinationPath)!);
+
+        var requiredSpace = isEncryption ? sourceFileInfo.Length * 2 : sourceFileInfo.Length;
+
+        if (destinationDrive.AvailableFreeSpace < requiredSpace)
+            throw new InvalidOperationException(
+                $"Insufficient disk space on {destinationDrive.Name}. Required: {requiredSpace:N0} bytes, Available: {destinationDrive.AvailableFreeSpace:N0} bytes");
     }
 
     private bool TryDeleteFile(string filePath)
