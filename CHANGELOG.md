@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.4.0-beta] - 2025-07-26
+
+### Enhanced
+- **Salt Generation Security** - Upgraded from HMAC-SHA256 to HMAC-SHA512
+  - Salt size increased from 32 bytes to 64 bytes 
+  - `CryptoOperations.PrecomputeSalt` now uses HMAC-SHA512
+
+### Changed
+- **CryptoConstants.SaltSize** - Updated from 32 to 64 bytes
+- **PrecomputeSalt Implementation** - Switched to HMAC-SHA512 algorithm
+
+### Breaking Changes
+- **v0.3.x files incompatible** - Files encrypted with v0.3.x cannot be decrypted with v0.4.x due to salt size change
+- **Metadata Format** - File header structure changed to accommodate larger salt size
+
+### Technical Details
+
 ## [0.3.0-beta] - 2025-07-26
 
 ### Fixed

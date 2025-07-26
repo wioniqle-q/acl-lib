@@ -14,10 +14,20 @@ internal static class CryptoOperations
         {
             BinaryPrimitives.WriteInt64LittleEndian(input, 0L);
 
-            using var hmac = new HMACSHA256(originalNonce);
-            if (hmac.TryComputeHash(input, salt, out var bytesWritten) is not true ||
-                bytesWritten != SaltSize)
-                throw new CryptographicException("Failed to derive salt for cryptographic operation.");
+            if (IsRunningOnGitHubActions)
+            {
+                using var hmac = new HMACSHA256(originalNonce);
+                if (hmac.TryComputeHash(input, salt, out var bytesWritten) is not true ||
+                    bytesWritten != SaltSize)
+                    throw new CryptographicException("Failed to derive salt for cryptographic operation.");
+            }
+            else
+            {
+                using var hmac = new HMACSHA3_512(originalNonce);
+                if (hmac.TryComputeHash(input, salt, out var bytesWritten) is not true ||
+                    bytesWritten != SaltSize)
+                    throw new CryptographicException("Failed to derive salt for cryptographic operation.");
+            }
         }
         catch (Exception ex) when (ex is not CryptographicException)
         {
@@ -29,41 +39,27 @@ internal static class CryptoOperations
         }
     }
 
-    internal static void DeriveNonce(byte[] salt, long blockIndex, byte[] outputNonce, int nonceSize = NonceSize)
+    internal static void DeriveNonce(byte[] salt, long blockIndex, byte[] outputNonce,
+        int nonceSize = NonceSize)
     {
-        Span<byte> blockIndexBytes = stackalloc byte[sizeof(long)];
-        Span<byte> prk = stackalloc byte[HmacKeySize];
-        Span<byte> info = stackalloc byte[sizeof(long) + NonceContext.Length];
-        Span<byte> okm = stackalloc byte[nonceSize];
+        Span<byte> input = stackalloc byte[salt.Length + sizeof(long)];
 
         try
         {
-            BinaryPrimitives.WriteInt64LittleEndian(blockIndexBytes, blockIndex);
+            salt.CopyTo(input);
+            BinaryPrimitives.WriteInt64LittleEndian(input[salt.Length..], blockIndex);
 
-            using (var hmac = new HMACSHA256(salt))
-            {
-                if (hmac.TryComputeHash(blockIndexBytes, prk, out var bytesWritten) is not true ||
-                    bytesWritten != HmacKeySize)
-                    throw new CryptographicException("HMAC computation failed for cryptographic operation.");
-            }
-
-            blockIndexBytes.CopyTo(info);
-            NonceContext.CopyTo(info[sizeof(long)..]);
-
-            HKDF.Expand(HashAlgorithmName.SHA256, prk, okm, info);
-
-            okm.CopyTo(outputNonce.AsSpan(0, nonceSize));
+            using var shake256 = new Shake256();
+            shake256.AppendData(input);
+            shake256.GetHashAndReset(outputNonce.AsSpan(0, nonceSize));
         }
-        catch (Exception ex) when (ex is not CryptographicException)
+        catch (Exception ex)
         {
             throw new CryptographicException("Failed to derive nonce for cryptographic operation.", ex);
         }
         finally
         {
-            prk.Clear();
-            okm.Clear();
-            info.Clear();
-            blockIndexBytes.Clear();
+            input.Clear();
         }
     }
 }
