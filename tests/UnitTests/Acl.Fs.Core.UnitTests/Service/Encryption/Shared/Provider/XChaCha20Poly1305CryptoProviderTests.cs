@@ -33,15 +33,15 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
 
         provider.EncryptBlock(key, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 
-        var associatedData = new byte[64 + 8 + 4];
+        var associatedData = new byte[SaltSize + 8 + 4];
         var associatedDataSpan = associatedData.AsSpan();
-        salt.AsSpan().CopyTo(associatedDataSpan[..64]);
+        salt.AsSpan().CopyTo(associatedDataSpan[..SaltSize]);
 
         var blockIndexBytes = BitConverter.GetBytes(blockIndex);
-        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(64, 8));
+        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize, 8));
 
         var alignedSizeBytes = BitConverter.GetBytes(alignedSize);
-        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(72, 4));
+        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize + 8, 4));
 
         var ciphertextWithTag = new byte[alignedSize + TagSize];
         ciphertext.AsSpan().CopyTo(ciphertextWithTag.AsSpan(0, alignedSize));
@@ -83,15 +83,15 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
 
         provider.EncryptBlock(key, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 
-        var associatedData = new byte[64 + 8 + 4];
+        var associatedData = new byte[SaltSize + 8 + 4];
         var associatedDataSpan = associatedData.AsSpan();
-        salt.AsSpan().CopyTo(associatedDataSpan[..64]);
+        salt.AsSpan().CopyTo(associatedDataSpan[..SaltSize]);
 
         var blockIndexBytes = BitConverter.GetBytes(wrongBlockIndex);
-        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(64, 8));
+        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize, 8));
 
         var alignedSizeBytes = BitConverter.GetBytes(alignedSize);
-        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(72, 4));
+        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize + 8, 4));
 
         var ciphertextWithTag = new byte[alignedSize + TagSize];
         ciphertext.AsSpan().CopyTo(ciphertextWithTag.AsSpan(0, alignedSize));
@@ -134,15 +134,15 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var wrongSalt = new byte[SaltSize];
         wrongSalt.AsSpan().Fill(0x05);
 
-        var associatedData = new byte[64 + 8 + 4];
+        var associatedData = new byte[SaltSize + 8 + 4];
         var associatedDataSpan = associatedData.AsSpan();
-        wrongSalt.AsSpan().CopyTo(associatedDataSpan[..64]);
+        wrongSalt.AsSpan().CopyTo(associatedDataSpan[..SaltSize]);
 
         var blockIndexBytes = BitConverter.GetBytes(blockIndex);
-        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(64, 8));
+        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize, 8));
 
         var alignedSizeBytes = BitConverter.GetBytes(alignedSize);
-        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(72, 4));
+        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize + 8, 4));
 
         var ciphertextWithTag = new byte[alignedSize + TagSize];
         ciphertext.AsSpan().CopyTo(ciphertextWithTag.AsSpan(0, alignedSize));

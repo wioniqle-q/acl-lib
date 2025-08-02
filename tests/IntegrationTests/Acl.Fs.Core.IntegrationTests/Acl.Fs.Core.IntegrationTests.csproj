@@ -16,7 +16,7 @@
         <RepositoryUrl>https://github.com/wioniqle-q/acl-lib</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <PackageReference Include="coverlet.collector" Version="6.0.4">
             <PrivateAssets>all</PrivateAssets>

@@ -29,11 +29,11 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = 0xAA;
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
 
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -72,10 +72,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = 0xAA;
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -116,10 +116,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = 0xAA;
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -160,10 +160,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = 0xAA;
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -204,10 +204,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
             var plaintextOriginal = new byte[blockSize];
             RandomNumberGenerator.Fill(plaintextOriginal);
 
-            var associatedData = new byte[64 + 8 + 4];
-            salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-            BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-            BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+            var associatedData = new byte[SaltSize + 8 + 4];
+            salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+            BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+            BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
             var ciphertextWithTag = new byte[blockSize + TagSize];
             algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -249,10 +249,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         RandomNumberGenerator.Fill(plaintextOriginal);
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);
@@ -296,10 +296,10 @@ public sealed class XChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = (byte)(i * 11 % 256);
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertextWithTag = new byte[blockSize + TagSize];
         algorithm.Encrypt(key, nonce, associatedData, plaintextOriginal, ciphertextWithTag);

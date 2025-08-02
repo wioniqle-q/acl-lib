@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.2.0-beta] - 2025-08-02
+
+### Added
+- Dynamic salt size support based on environment (64 bytes for production, 32 bytes for CI/GitHub Actions)
+
+### Changed
+- Salt size is now dynamically determined by `SaltSize` constant instead of hardcoded 64 bytes
+- Associated data buffer allocation now uses dynamic sizing: `SaltSize + sizeof(long) + sizeof(int)`
+- All crypto provider tests updated to use dynamic salt sizing
+- Binary data writing operations now use dynamic offsets based on actual salt size
+
+### Security
+- Implemented secure clearing of `associatedData` spans in all crypto providers
+
 ## [0.1.0-beta] - 2025-07-29
 
 ### Added

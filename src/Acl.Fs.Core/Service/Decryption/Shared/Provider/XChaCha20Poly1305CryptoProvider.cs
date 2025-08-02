@@ -19,27 +19,35 @@ internal sealed class XChaCha20Poly1305CryptoProvider : ICryptoProvider<Key>
         int blockSize,
         long blockIndex)
     {
-        Span<byte> associatedData = stackalloc byte[64 + sizeof(long) + sizeof(int)];
+        Span<byte> associatedData = stackalloc byte[SaltSize + sizeof(long) + sizeof(int)];
 
-        salt.AsSpan(0, Math.Min(64, salt.Length)).CopyTo(associatedData);
+        salt.AsSpan(0, Math.Min(SaltSize, salt.Length)).CopyTo(associatedData);
 
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData[64..], blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData[72..], blockSize);
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData[SaltSize..], blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData[(SaltSize + sizeof(long))..], blockSize);
 
         Span<byte> ciphertextWithTag = stackalloc byte[blockSize + TagSize];
         buffer.AsSpan(0, blockSize).CopyTo(ciphertextWithTag);
         tag.AsSpan(0, TagSize).CopyTo(ciphertextWithTag[blockSize..]);
 
-        var algorithm = (NSec.Cryptography.XChaCha20Poly1305)key.Algorithm;
+        try
+        {
+            var algorithm = (NSec.Cryptography.XChaCha20Poly1305)key.Algorithm;
 
-        var success = algorithm.Decrypt(
-            key,
-            chunkNonce.AsSpan(0, XChaCha20Poly1305NonceSize),
-            associatedData,
-            ciphertextWithTag,
-            plaintext.AsSpan(0, blockSize));
+            var success = algorithm.Decrypt(
+                key,
+                chunkNonce.AsSpan(0, XChaCha20Poly1305NonceSize),
+                associatedData,
+                ciphertextWithTag,
+                plaintext.AsSpan(0, blockSize));
 
-        if (success is not true)
-            throw new CryptographicException(ErrorMessages.DecryptionFailed);
+            if (success is not true)
+                throw new CryptographicException(ErrorMessages.DecryptionFailed);
+        }
+        finally
+        {
+            associatedData.Clear();
+            ciphertextWithTag.Clear();
+        }
     }
 }

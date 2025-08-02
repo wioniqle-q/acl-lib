@@ -26,11 +26,11 @@ public sealed class ChaCha20Poly1305CryptoProviderTests
         var plaintextOriginal = new byte[blockSize];
         for (var i = 0; i < blockSize; i++) plaintextOriginal[i] = 0xAA;
 
-        var associatedData = new byte[64 + 8 + 4];
-        salt.AsSpan().CopyTo(associatedData.AsSpan(0, 64));
+        var associatedData = new byte[SaltSize + 8 + 4];
+        salt.AsSpan().CopyTo(associatedData.AsSpan(0, SaltSize));
 
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(64), blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(72), blockSize);
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData.AsSpan(SaltSize), blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData.AsSpan(SaltSize + 8), blockSize);
 
         var ciphertext = new byte[blockSize];
         var tag = new byte[TagSize];

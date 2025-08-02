@@ -16,18 +16,25 @@ internal sealed class ChaCha20Poly1305CryptoProvider : ICryptoProvider<System.Se
         long blockIndex,
         byte[] salt)
     {
-        Span<byte> associatedData = stackalloc byte[64 + sizeof(long) + sizeof(int)];
+        Span<byte> associatedData = stackalloc byte[SaltSize + sizeof(long) + sizeof(int)];
 
-        salt.AsSpan(0, Math.Min(64, salt.Length)).CopyTo(associatedData);
+        salt.AsSpan(0, Math.Min(SaltSize, salt.Length)).CopyTo(associatedData);
 
-        BinaryPrimitives.WriteInt64LittleEndian(associatedData[64..], blockIndex);
-        BinaryPrimitives.WriteInt32LittleEndian(associatedData[72..], alignedSize);
+        BinaryPrimitives.WriteInt64LittleEndian(associatedData[SaltSize..], blockIndex);
+        BinaryPrimitives.WriteInt32LittleEndian(associatedData[(SaltSize + sizeof(long))..], alignedSize);
 
-        chaCha20Poly1305.Encrypt(
-            chunkNonce.AsSpan(0, NonceSize),
-            buffer.AsSpan(0, alignedSize),
-            ciphertext.AsSpan(0, alignedSize),
-            tag.AsSpan(0, TagSize),
-            associatedData);
+        try
+        {
+            chaCha20Poly1305.Encrypt(
+                chunkNonce.AsSpan(0, NonceSize),
+                buffer.AsSpan(0, alignedSize),
+                ciphertext.AsSpan(0, alignedSize),
+                tag.AsSpan(0, TagSize),
+                associatedData);
+        }
+        finally
+        {
+            associatedData.Clear();
+        }
     }
 }

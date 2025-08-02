@@ -33,16 +33,16 @@ public sealed class AesGcmCryptoProviderTests
 
         provider.EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 
-        var associatedData = new byte[64 + 8 + 4];
+        var associatedData = new byte[SaltSize + 8 + 4];
 
         var associatedDataSpan = associatedData.AsSpan();
-        salt.AsSpan().CopyTo(associatedDataSpan[..64]);
+        salt.AsSpan().CopyTo(associatedDataSpan[..SaltSize]);
 
         var blockIndexBytes = BitConverter.GetBytes(blockIndex);
-        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(64, 8));
+        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize, 8));
 
         var alignedSizeBytes = BitConverter.GetBytes(alignedSize);
-        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(72, 4));
+        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize + 8, 4));
 
         var decrypted = new byte[alignedSize];
         aesGcm.Decrypt(chunkNonce, ciphertext, tag, decrypted, associatedData);
@@ -78,16 +78,16 @@ public sealed class AesGcmCryptoProviderTests
 
         provider.EncryptBlock(aesGcm, buffer, ciphertext, tag, chunkNonce, alignedSize, blockIndex, salt);
 
-        var associatedData = new byte[64 + 8 + 4];
+        var associatedData = new byte[SaltSize + 8 + 4];
 
         var associatedDataSpan = associatedData.AsSpan();
-        salt.AsSpan().CopyTo(associatedDataSpan[..64]);
+        salt.AsSpan().CopyTo(associatedDataSpan[..SaltSize]);
 
         var blockIndexBytes = BitConverter.GetBytes(wrongBlockIndex);
-        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(64, 8));
+        blockIndexBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize, 8));
 
         var alignedSizeBytes = BitConverter.GetBytes(alignedSize);
-        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(72, 4));
+        alignedSizeBytes.AsSpan().CopyTo(associatedDataSpan.Slice(SaltSize + 8, 4));
 
         var decrypted = new byte[alignedSize];
         Assert.Throws<AuthenticationTagMismatchException>(() =>
