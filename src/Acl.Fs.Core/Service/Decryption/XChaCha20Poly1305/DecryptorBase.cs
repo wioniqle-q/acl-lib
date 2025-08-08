@@ -10,6 +10,7 @@ using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Policy;
 using Acl.Fs.Core.Service.Decryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
+using Acl.Fs.Native.Factory;
 using Microsoft.Extensions.Logging;
 using NSec.Cryptography;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
@@ -95,6 +96,8 @@ internal sealed class DecryptorBase(
                 header,
                 metadataBufferSize,
                 cancellationToken);
+
+            ShellNotifierFactory.NotifyPathUpdated(instruction.DestinationPath);
 
             await _auditService.AuditDecryptionCompleted(cancellationToken);
         }

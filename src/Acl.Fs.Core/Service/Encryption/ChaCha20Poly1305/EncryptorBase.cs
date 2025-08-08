@@ -8,6 +8,7 @@ using Acl.Fs.Core.Abstractions.Service.Shared.KeyDerivation;
 using Acl.Fs.Core.Models;
 using Acl.Fs.Core.Service.Encryption.Shared.Buffer;
 using Acl.Fs.Core.Utility;
+using Acl.Fs.Native.Factory;
 using Microsoft.Extensions.Logging;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
@@ -86,6 +87,8 @@ internal sealed class EncryptorBase(
                 bufferManager,
                 metadataBufferSize,
                 cancellationToken);
+
+            ShellNotifierFactory.NotifyPathUpdated(instruction.DestinationPath);
 
             await _auditService.AuditEncryptionCompleted(cancellationToken);
         }

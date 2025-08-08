@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.2.1-beta] - 2025-08-08
+
+### Added
+
+- Cross-platform shell notification abstraction (`ShellNotifierFactory`)
+
+### Changed
+
+- The shell notification logic is now platform-specific and for now only available on Windows
+
 ## [0.2.0-beta] - 2025-08-02
 
 ### Added
