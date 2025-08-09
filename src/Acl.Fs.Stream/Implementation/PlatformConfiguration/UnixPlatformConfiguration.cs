@@ -1,5 +1,6 @@
 ﻿using Acl.Fs.Native.Platform.Unix;
 using Acl.Fs.Stream.Abstractions;
+using Acl.Fs.Stream.Resource;
 using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Stream.Implementation.PlatformConfiguration;
@@ -15,7 +16,7 @@ internal sealed class UnixPlatformConfiguration(ILogger? logger = null) : IPlatf
 
         ConfigureFileSpecificSettings(stream);
 
-        logger?.LogDebug("Unix stream configuration applied");
+        logger?.LogDebug(LogMessages.UnixConfiguration);
     }
 
     private static bool ConfigureProcess()
@@ -31,13 +32,13 @@ internal sealed class UnixPlatformConfiguration(ILogger? logger = null) : IPlatf
         var seqResult = UnixKernel.PosixFadvise(fileStream.SafeFileHandle, 0, fileStream.Length,
             UnixConstants.FileAdvice.PosixFadvSequential);
         if (seqResult is not 0)
-            logger?.LogWarning("PosixFadvise Sequential failed with error {ErrorCode} for file length {Length}",
+            logger?.LogWarning(LogMessages.PosixFadviseSequentialFailed,
                 seqResult, fileStream.Length);
 
         var dontNeedResult = UnixKernel.PosixFadvise(fileStream.SafeFileHandle, 0, fileStream.Length,
             UnixConstants.FileAdvice.PosixFadvDontNeed);
         if (dontNeedResult is not 0)
-            logger?.LogWarning("PosixFadvise DontNeed failed with error {ErrorCode} for file length {Length}",
+            logger?.LogWarning(LogMessages.PosixFadviseDontNeedFailed,
                 dontNeedResult, fileStream.Length);
     }
 

@@ -1,4 +1,5 @@
 ﻿using Acl.Fs.Stream.Abstractions;
+using Acl.Fs.Stream.Resource;
 using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Stream.Implementation.PlatformConfiguration;
@@ -14,7 +15,7 @@ internal sealed class MacOsPlatformConfiguration(ILogger? logger = null) : IPlat
 
         ConfigureFileSpecificSettings(stream);
 
-        logger?.LogDebug("MacOs stream configuration applied");
+        logger?.LogDebug(LogMessages.MacOsConfiguration);
     }
 
     private static bool ConfigureProcess()
@@ -25,6 +26,6 @@ internal sealed class MacOsPlatformConfiguration(ILogger? logger = null) : IPlat
     private void ConfigureFileSpecificSettings(System.IO.Stream stream)
     {
         if (stream is not FileStream fileStream) return;
-        logger?.LogDebug("File-specific settings configured for {FileName}", fileStream.Name);
+        logger?.LogDebug(LogMessages.FileSpecificSettingsConfigured, fileStream.Name);
     }
 }

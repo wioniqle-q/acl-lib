@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 - Platform-specific configuration 
 - Lazy initialization for process-level system call optimizations
-- Enhanced error messages with platform and implementation details (`UnsupportedPlatformWithDetails`)
+- Enhanced error messages with platform and implementation details (`UnsupportedPlatform`)
 
 ### Changed
 

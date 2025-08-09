@@ -1,4 +1,5 @@
 ﻿using Acl.Fs.Stream.Abstractions;
+using Acl.Fs.Stream.Resource;
 using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Stream.Implementation.PlatformConfiguration;
@@ -14,7 +15,7 @@ internal sealed class WindowsPlatformConfiguration(ILogger? logger = null) : IPl
 
         ConfigureFileSpecificSettings(stream);
 
-        logger?.LogDebug("Windows stream configuration applied");
+        logger?.LogDebug(LogMessages.WindowsConfiguration);
     }
 
     private static bool ConfigureProcess()
@@ -26,6 +27,6 @@ internal sealed class WindowsPlatformConfiguration(ILogger? logger = null) : IPl
     {
         if (stream is not FileStream fileStream) return;
 
-        logger?.LogDebug("File-specific settings configured for {FileName}", fileStream.Name);
+        logger?.LogDebug(LogMessages.FileSpecificSettingsConfigured, fileStream.Name);
     }
 }
