@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Acl.Fs.Stream.Abstractions.Implementation.PlatformConfiguration;
 using Acl.Fs.Stream.Core;
 using Microsoft.Extensions.Logging;
 
@@ -8,13 +9,11 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 {
     private readonly IPlatformConfiguration _platformConfiguration;
     internal readonly TStream InnerStream;
-    protected readonly ILogger? Logger;
     private volatile bool _disposed;
 
     protected DirectStreamBase(TStream innerStream, ILogger? logger = null)
     {
         InnerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
-        Logger = logger;
         _platformConfiguration = PlatformConfigurationFactory.Create(logger);
 
         ConfigurePlatformProperties();

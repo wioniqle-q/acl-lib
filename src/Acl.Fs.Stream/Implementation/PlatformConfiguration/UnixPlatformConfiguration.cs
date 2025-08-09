@@ -1,5 +1,5 @@
 ﻿using Acl.Fs.Native.Platform.Unix;
-using Acl.Fs.Stream.Abstractions;
+using Acl.Fs.Stream.Abstractions.Implementation.PlatformConfiguration;
 using Acl.Fs.Stream.Resource;
 using Microsoft.Extensions.Logging;
 

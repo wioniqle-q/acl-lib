@@ -1,4 +1,4 @@
-﻿namespace Acl.Fs.Stream.Abstractions;
+﻿namespace Acl.Fs.Stream.Abstractions.Implementation.PlatformConfiguration;
 
 internal interface IPlatformConfiguration
 {
