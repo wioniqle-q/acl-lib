@@ -6,7 +6,7 @@ namespace Acl.Fs.Constant.Versioning;
 internal static class VersionConstants
 {
     internal const byte CurrentMajorVersion = 0;
-    internal const byte CurrentMinorVersion = 2;
+    internal const byte CurrentMinorVersion = 3;
 
     internal const int VersionHeaderSize = 2;
 

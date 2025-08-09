@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.3.0-beta] - 2025-08-09
+
+### Added
+
+- Platform-specific configuration 
+- Lazy initialization for process-level system call optimizations
+- Enhanced error messages with platform and implementation details (`UnsupportedPlatformWithDetails`)
+
+### Changed
+
+- Refactored platform configuration logic into separate service classes
+- Process-level syscalls (IO priority) now execute only once per application lifecycle instead of per file
+
+### Technical
+
+- Platform configurations now follow consistent architecture across Windows, macOS, and Linux
+- Factory pattern implementation for runtime platform detection
+
 ## [0.2.1-beta] - 2025-08-08
 
 ### Added

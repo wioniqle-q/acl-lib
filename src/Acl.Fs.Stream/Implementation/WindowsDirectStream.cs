@@ -18,11 +18,6 @@ internal sealed class WindowsDirectStream(
         new FileStream(path ?? throw new ArgumentNullException(nameof(path)), mode, access, share, bufferSize, options),
         logger)
 {
-    protected override void ConfigurePlatformPropertiesCore()
-    {
-        Logger?.LogDebug(LogMessages.WindowsConfiguration);
-    }
-
     protected override void ExecutePlatformSpecificFlush(CancellationToken cancellationToken)
     {
         if (WindowsKernel.FlushBuffers(InnerStream.SafeFileHandle) is not true)

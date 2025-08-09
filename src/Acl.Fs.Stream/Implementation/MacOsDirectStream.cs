@@ -18,11 +18,6 @@ internal sealed class MacOsDirectStream(
         new FileStream(path ?? throw new ArgumentNullException(nameof(path)), mode, access, share, bufferSize, options),
         logger)
 {
-    protected override void ConfigurePlatformPropertiesCore()
-    {
-        Logger?.LogDebug(LogMessages.MacOsConfiguration);
-    }
-
     protected override void ExecutePlatformSpecificFlush(CancellationToken cancellationToken)
     {
         if (MacOsKernel.FullFsync(InnerStream.SafeFileHandle) is not 0)

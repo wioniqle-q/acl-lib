@@ -1,10 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
+using Acl.Fs.Stream.Core;
 using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Stream.Abstractions;
 
 internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStream : System.IO.Stream
 {
+    private readonly IPlatformConfiguration _platformConfiguration;
     internal readonly TStream InnerStream;
     protected readonly ILogger? Logger;
     private volatile bool _disposed;
@@ -13,6 +15,7 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
     {
         InnerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
         Logger = logger;
+        _platformConfiguration = PlatformConfigurationFactory.Create(logger);
 
         ConfigurePlatformProperties();
     }
@@ -127,7 +130,7 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 
     private void ConfigurePlatformProperties()
     {
-        ConfigurePlatformPropertiesCore();
+        _platformConfiguration.ConfigureStream(InnerStream);
     }
 
     private void ThrowIfDisposed()
@@ -135,6 +138,5 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
         ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
-    protected abstract void ConfigurePlatformPropertiesCore();
     protected abstract void ExecutePlatformSpecificFlush(CancellationToken cancellationToken);
 }

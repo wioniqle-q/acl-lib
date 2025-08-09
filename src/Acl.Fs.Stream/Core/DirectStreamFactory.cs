@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Acl.Fs.Stream.Implementation;
 using Acl.Fs.Stream.Resource;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,8 @@ internal static class DirectStreamFactory
         if (OperatingSystem.IsWindows())
             return new WindowsDirectStream(path, mode, access, share, bufferSize, options, logger);
 
-        throw new PlatformNotSupportedException(ErrorMessages.UnsupportedPlatform);
+        throw new PlatformNotSupportedException(
+            string.Format(ErrorMessages.UnsupportedPlatform, RuntimeInformation.OSDescription,
+                nameof(DirectStreamFactory)));
     }
 }
