@@ -11,7 +11,7 @@ internal sealed class AesGcmFactory : IAesGcmFactory
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
 
-        if (key.Length is not (16 or 24 or 32))
+        if (key.Length is not 32)
             throw new ArgumentException(ErrorMessages.InvalidKeySize, nameof(key));
 
         return new AesGcm(key, TagSize);
