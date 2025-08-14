@@ -1,0 +1,151 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  DOTNET_MULTILEVEL_LOOKUP: 0
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  unit-tests:
+    name: Unit Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'almalinux' && 'ubuntu-latest' || matrix.os }}
+    
+    container:
+      image: ${{ matrix.os == 'almalinux' && 'almalinux:9' || '' }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, almalinux, windows-2025 ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Windows Defender (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Add-MpPreference -ExclusionPath "${{ github.workspace }}"
+          Add-MpPreference -ExclusionPath "$env:USERPROFILE\.nuget"
+        shell: powershell
+        continue-on-error: true
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install dependencies (AlmaLinux)
+        if: matrix.os == 'almalinux'
+        run: dnf install -y icu dotnet-sdk-9.0
+
+      - name: Create NuGet cache directory (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.nuget/packages"
+          attrib +H "${{ github.workspace }}/.nuget"
+        shell: powershell
+
+      - name: Create NuGet cache directory (Unix)
+        if: runner.os != 'Windows'
+        run: mkdir -p ${{ github.workspace }}/.nuget/packages
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/nuget.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Unit Test dependencies
+        run: |
+          dotnet restore tests/UnitTests/Acl.Fs.Audit.UnitTests/Acl.Fs.Audit.UnitTests.csproj --packages ${{ github.workspace }}/.nuget/packages --no-cache --force
+          dotnet restore tests/UnitTests/Acl.Fs.Core.UnitTests/Acl.Fs.Core.UnitTests.csproj --packages ${{ github.workspace }}/.nuget/packages --no-cache --force
+          dotnet restore tests/UnitTests/Acl.Fs.Native.UnitTests/Acl.Fs.Native.UnitTests.csproj --packages ${{ github.workspace }}/.nuget/packages --no-cache --force
+          dotnet restore tests/UnitTests/Acl.Fs.Stream.UnitTests/Acl.Fs.Stream.UnitTests.csproj --packages ${{ github.workspace }}/.nuget/packages --no-cache --force
+
+      - name: Build Unit Tests
+        run: |
+          dotnet build tests/UnitTests/Acl.Fs.Audit.UnitTests/Acl.Fs.Audit.UnitTests.csproj --no-restore --configuration Release --verbosity minimal
+          dotnet build tests/UnitTests/Acl.Fs.Core.UnitTests/Acl.Fs.Core.UnitTests.csproj --no-restore --configuration Release --verbosity minimal
+          dotnet build tests/UnitTests/Acl.Fs.Native.UnitTests/Acl.Fs.Native.UnitTests.csproj --no-restore --configuration Release --verbosity minimal
+          dotnet build tests/UnitTests/Acl.Fs.Stream.UnitTests/Acl.Fs.Stream.UnitTests.csproj --no-restore --configuration Release --verbosity minimal
+
+      - name: Run Unit Tests
+        run: |
+          dotnet test tests/UnitTests/Acl.Fs.Audit.UnitTests/Acl.Fs.Audit.UnitTests.csproj --configuration Release --verbosity minimal --logger "console;verbosity=detailed" --no-build
+          dotnet test tests/UnitTests/Acl.Fs.Core.UnitTests/Acl.Fs.Core.UnitTests.csproj --configuration Release --verbosity minimal --logger "console;verbosity=detailed" --no-build
+          dotnet test tests/UnitTests/Acl.Fs.Native.UnitTests/Acl.Fs.Native.UnitTests.csproj --configuration Release --verbosity minimal --logger "console;verbosity=detailed" --no-build
+          dotnet test tests/UnitTests/Acl.Fs.Stream.UnitTests/Acl.Fs.Stream.UnitTests.csproj --configuration Release --verbosity minimal --logger "console;verbosity=detailed" --no-build
+
+  integration-tests:
+    name: Integration Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'almalinux' && 'ubuntu-latest' || matrix.os }}
+    
+    container:
+      image: ${{ matrix.os == 'almalinux' && 'almalinux:9' || '' }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, almalinux, windows-2025 ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Windows Defender (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Add-MpPreference -ExclusionPath "${{ github.workspace }}"
+          Add-MpPreference -ExclusionPath "$env:USERPROFILE\.nuget"
+        shell: powershell
+        continue-on-error: true
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install dependencies (AlmaLinux)
+        if: matrix.os == 'almalinux'
+        run: dnf install -y icu dotnet-sdk-9.0
+
+      - name: Create NuGet cache directory (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.nuget/packages"
+          attrib +H "${{ github.workspace }}/.nuget"
+        shell: powershell
+
+      - name: Create NuGet cache directory (Unix)
+        if: runner.os != 'Windows'
+        run: mkdir -p ${{ github.workspace }}/.nuget/packages
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/nuget.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Integration Test dependencies
+        run: dotnet restore tests/IntegrationTests/Acl.Fs.Core.IntegrationTests/Acl.Fs.Core.IntegrationTests.csproj --packages ${{ github.workspace }}/.nuget/packages --no-cache --force
+
+      - name: Build Integration Tests
+        run: dotnet build tests/IntegrationTests/Acl.Fs.Core.IntegrationTests/Acl.Fs.Core.IntegrationTests.csproj --no-restore --configuration Release --verbosity minimal
+
+      - name: Run Integration Tests
+        run: dotnet test tests/IntegrationTests/Acl.Fs.Core.IntegrationTests/Acl.Fs.Core.IntegrationTests.csproj --configuration Release --verbosity minimal --logger "console;verbosity=detailed" --no-build
