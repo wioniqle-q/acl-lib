@@ -21,7 +21,7 @@ public sealed class KeyPreparationServiceTests
     }
 
     [Fact]
-    public void PrepareKey_WithSourceKeyOnly_Should_CreateResultWithGeneratedSalt()
+    public void PrepareKey_WithPasswordOnly_Should_CreateResultWithGeneratedSalt()
     {
         using var result = _keyPreparationService.PrepareKey(_testPassword);
 
@@ -31,7 +31,7 @@ public sealed class KeyPreparationServiceTests
     }
 
     [Fact]
-    public void PrepareKeyWithSalt_WithSourceKeyAndSalt_Should_CreateResultWithProvidedSalt()
+    public void PrepareKeyWithSalt_WithPasswordAndSalt_Should_CreateResultWithProvidedSalt()
     {
         using var result = _keyPreparationService.PrepareKeyWithSalt(_testPassword, _testSalt);
 
@@ -102,7 +102,7 @@ public sealed class KeyPreparationServiceTests
     }
 
     [Fact]
-    public void PrepareKeyWithSalt_WithEmptySourceKey_Should_CreateResult()
+    public void PrepareKeyWithSalt_WithEmptyPassword_Should_CreateResult()
     {
         var emptyPassword = Array.Empty<byte>();
 
@@ -126,7 +126,7 @@ public sealed class KeyPreparationServiceTests
     }
 
     [Fact]
-    public void PrepareKeyWithSalt_WithLargeSourceKey_Should_CreateResult()
+    public void PrepareKeyWithSalt_WithLargePassword_Should_CreateResult()
     {
         var largePassword = new byte[1024];
         RandomNumberGenerator.Fill(largePassword);
