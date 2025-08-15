@@ -7,7 +7,7 @@ internal interface IDecryptorBase
 {
     Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
-        byte[] key,
+        ReadOnlyMemory<byte> password,
         ILogger logger,
         CancellationToken cancellationToken);
 }

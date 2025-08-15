@@ -8,14 +8,14 @@ namespace Acl.Fs.Core.Service.Encryption.Shared.Metadata;
 
 internal sealed class MetadataService : IMetadataService
 {
-    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, byte[] argon2Salt,
+    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, ReadOnlySpan<byte> argon2Salt,
         byte[] metadataBuffer,
         int metadataBufferSize)
     {
         PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt, metadataBuffer, metadataBufferSize, NonceSize);
     }
 
-    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, byte[] argon2Salt,
+    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, ReadOnlySpan<byte> argon2Salt,
         byte[] metadataBuffer,
         int metadataBufferSize, int nonceSize)
     {
@@ -37,7 +37,7 @@ internal sealed class MetadataService : IMetadataService
         chaCha20Salt.CopyTo(metadataBuffer.AsSpan(offset));
         offset += SaltSize;
 
-        argon2Salt.AsSpan(0, Argon2IdSaltSize).CopyTo(metadataBuffer.AsSpan(offset));
+        argon2Salt[..Argon2IdSaltSize].CopyTo(metadataBuffer.AsSpan(offset));
     }
 
     public async Task WriteHeaderAsync(System.IO.Stream destinationStream, byte[] metadataBuffer,

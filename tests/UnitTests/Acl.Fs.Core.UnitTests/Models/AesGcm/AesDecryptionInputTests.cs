@@ -101,10 +101,7 @@ public sealed class AesDecryptionInputTests
         var input1 = new AesDecryptionInput(passwordMemory1);
         var input2 = new AesDecryptionInput(passwordMemory2);
 
-        Assert.Equal(input1, input2);
-        Assert.True(input1 == input2);
-        Assert.False(input1 != input2);
-        Assert.Equal(input1.GetHashCode(), input2.GetHashCode());
+        Assert.True(input1.Password.Span.SequenceEqual(input2.Password.Span));
     }
 
     [Fact]
@@ -118,9 +115,7 @@ public sealed class AesDecryptionInputTests
         var input1 = new AesDecryptionInput(passwordMemory1);
         var input2 = new AesDecryptionInput(passwordMemory2);
 
-        Assert.NotEqual(input1, input2);
-        Assert.False(input1 == input2);
-        Assert.True(input1 != input2);
+        Assert.False(input1.Password.Span.SequenceEqual(input2.Password.Span));
     }
 
     [Fact]
@@ -154,5 +149,33 @@ public sealed class AesDecryptionInputTests
 
         Assert.Equal(passwordLength, input.Password.Length);
         Assert.Equal(password, input.Password.ToArray());
+    }
+
+    [Fact]
+    public void Dispose_ShouldZeroMemoryOfPassword()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new AesDecryptionInput(passwordMemory);
+
+        Assert.Equal(password, input.Password.ToArray());
+        input.Dispose();
+
+        var passwordAfterDispose = input.Password.ToArray();
+        Assert.All(passwordAfterDispose, b => Assert.Equal(0, b));
+    }
+
+    [Fact]
+    public void Dispose_CalledMultipleTimes_ShouldNotThrow()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new AesDecryptionInput(passwordMemory);
+
+        input.Dispose();
+        input.Dispose();
+        input.Dispose();
+
+        Assert.True(true);
     }
 }

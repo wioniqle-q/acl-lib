@@ -19,33 +19,27 @@ internal sealed class KeyPreparationService(
 
     public IKeyPreparationResult PrepareKey(ReadOnlySpan<byte> sourceKey)
     {
-        var pooledSaltBuffer = CryptoPool.Rent(_keyDerivationService.SaltSize);
+        var saltBuffer = CryptoPool.Rent(_keyDerivationService.SaltSize);
 
         byte[] derivedKeyData = [];
         byte[] saltData = [];
-        GCHandle pinnedKeyHandle = default;
-        GCHandle pinnedSaltHandle = default;
+        GCHandle keyHandle = default;
         var isKeyMemoryLocked = 0;
-        var isSaltMemoryLocked = 0;
 
         try
         {
-            RandomNumberGenerator.Fill(pooledSaltBuffer.AsSpan(0, _keyDerivationService.SaltSize));
+            RandomNumberGenerator.Fill(saltBuffer.AsSpan(0, _keyDerivationService.SaltSize));
 
-            saltData = pooledSaltBuffer.AsSpan(0, _keyDerivationService.SaltSize).ToArray();
+            saltData = saltBuffer.AsSpan(0, _keyDerivationService.SaltSize).ToArray();
 
             derivedKeyData = _keyDerivationService.DeriveKey(
                 sourceKey,
-                pooledSaltBuffer.AsSpan(0, _keyDerivationService.SaltSize),
+                saltBuffer.AsSpan(0, _keyDerivationService.SaltSize),
                 CryptoConstants.Argon2IdOutputKeyLength);
 
-            pinnedKeyHandle = GCHandle.Alloc(derivedKeyData, GCHandleType.Pinned);
-            if (pinnedKeyHandle.LockMemory(derivedKeyData.Length, _auditLogger))
+            keyHandle = GCHandle.Alloc(derivedKeyData, GCHandleType.Pinned);
+            if (keyHandle.LockMemory(derivedKeyData.Length, _auditLogger))
                 Interlocked.Exchange(ref isKeyMemoryLocked, 1);
-
-            pinnedSaltHandle = GCHandle.Alloc(saltData, GCHandleType.Pinned);
-            if (pinnedSaltHandle.LockMemory(saltData.Length, _auditLogger))
-                Interlocked.Exchange(ref isSaltMemoryLocked, 1);
 
             var derivedKeyMemory = new ReadOnlyMemory<byte>(derivedKeyData);
             var saltMemory = new ReadOnlyMemory<byte>(saltData);
@@ -53,23 +47,16 @@ internal sealed class KeyPreparationService(
             return new KeyPreparationResult(
                 derivedKeyMemory,
                 saltMemory,
-                pinnedKeyHandle,
-                pinnedSaltHandle,
+                keyHandle,
                 isKeyMemoryLocked,
-                isSaltMemoryLocked,
                 _auditLogger);
         }
         catch
         {
             if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
-                pinnedKeyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
-            if (pinnedKeyHandle.IsAllocated)
-                pinnedKeyHandle.Free();
-
-            if (Interlocked.CompareExchange(ref isSaltMemoryLocked, 0, 1) is 1)
-                pinnedSaltHandle.UnlockMemory(saltData.Length, _auditLogger);
-            if (pinnedSaltHandle.IsAllocated)
-                pinnedSaltHandle.Free();
+                keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
+            if (keyHandle.IsAllocated)
+                keyHandle.Free();
 
             CryptographicOperations.ZeroMemory(derivedKeyData);
             CryptographicOperations.ZeroMemory(saltData);
@@ -78,7 +65,7 @@ internal sealed class KeyPreparationService(
         }
         finally
         {
-            CryptoPool.Return(pooledSaltBuffer);
+            CryptoPool.Return(saltBuffer);
         }
     }
 
@@ -90,22 +77,16 @@ internal sealed class KeyPreparationService(
             CryptoConstants.Argon2IdOutputKeyLength);
 
         byte[] saltData = [];
-        GCHandle pinnedKeyHandle = default;
-        GCHandle pinnedSaltHandle = default;
+        GCHandle keyHandle = default;
         var isKeyMemoryLocked = 0;
-        var isSaltMemoryLocked = 0;
 
         try
         {
             saltData = salt.ToArray();
 
-            pinnedKeyHandle = GCHandle.Alloc(derivedKeyData, GCHandleType.Pinned);
-            if (pinnedKeyHandle.LockMemory(derivedKeyData.Length, _auditLogger))
+            keyHandle = GCHandle.Alloc(derivedKeyData, GCHandleType.Pinned);
+            if (keyHandle.LockMemory(derivedKeyData.Length, _auditLogger))
                 Interlocked.Exchange(ref isKeyMemoryLocked, 1);
-
-            pinnedSaltHandle = GCHandle.Alloc(saltData, GCHandleType.Pinned);
-            if (pinnedSaltHandle.LockMemory(saltData.Length, _auditLogger))
-                Interlocked.Exchange(ref isSaltMemoryLocked, 1);
 
             var derivedKeyMemory = new ReadOnlyMemory<byte>(derivedKeyData);
             var saltMemory = new ReadOnlyMemory<byte>(saltData);
@@ -113,23 +94,16 @@ internal sealed class KeyPreparationService(
             return new KeyPreparationResult(
                 derivedKeyMemory,
                 saltMemory,
-                pinnedKeyHandle,
-                pinnedSaltHandle,
+                keyHandle,
                 isKeyMemoryLocked,
-                isSaltMemoryLocked,
                 _auditLogger);
         }
         catch
         {
             if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
-                pinnedKeyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
-            if (pinnedKeyHandle.IsAllocated)
-                pinnedKeyHandle.Free();
-
-            if (Interlocked.CompareExchange(ref isSaltMemoryLocked, 0, 1) is 1)
-                pinnedSaltHandle.UnlockMemory(saltData.Length, _auditLogger);
-            if (pinnedSaltHandle.IsAllocated)
-                pinnedSaltHandle.Free();
+                keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
+            if (keyHandle.IsAllocated)
+                keyHandle.Free();
 
             CryptographicOperations.ZeroMemory(derivedKeyData);
             CryptographicOperations.ZeroMemory(saltData);

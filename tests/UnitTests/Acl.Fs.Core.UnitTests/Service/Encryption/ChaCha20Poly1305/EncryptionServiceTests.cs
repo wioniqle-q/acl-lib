@@ -86,23 +86,40 @@ public sealed class EncryptionServiceTests : IDisposable
         RandomNumberGenerator.Fill(encryptionKey);
         var input = new ChaCha20Poly1305EncryptionInput(encryptionKey);
 
+        ReadOnlyMemory<byte> capturedPassword = default;
+        byte[] capturedNonce = null!;
+        FileTransferInstruction capturedInstruction = null!;
+
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((instruction,
+                password, nonce, _, _) =>
+            {
+                capturedInstruction = instruction;
+                capturedPassword = password;
+                capturedNonce = nonce;
+            })
             .Returns(Task.CompletedTask);
 
         await _encryptionService.EncryptFileAsync(transferInstruction, input, _cancellationTokenSource.Token);
 
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
-            It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.Is<byte[]>(key => key.Length == 32 && key.SequenceEqual(encryptionKey)),
-            It.Is<byte[]>(nonce => nonce.Length == 12),
+            It.IsAny<FileTransferInstruction>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
+            It.IsAny<byte[]>(),
             _mockLogger.Object,
             _cancellationTokenSource.Token), Times.Once);
+
+        Assert.Equal(sourcePath, capturedInstruction.SourcePath);
+        Assert.Equal(destinationPath, capturedInstruction.DestinationPath);
+        Assert.Equal(32, capturedPassword.Length);
+        Assert.True(capturedPassword.Span.SequenceEqual(encryptionKey));
+        Assert.Equal(12, capturedNonce.Length);
     }
 
     [Fact]
@@ -123,7 +140,7 @@ public sealed class EncryptionServiceTests : IDisposable
 
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.IsAny<FileTransferInstruction>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<byte[]>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Never);
@@ -144,7 +161,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
@@ -170,11 +187,12 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, byte[], byte[], ILogger, CancellationToken>((_, _, nonce, _, _) =>
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((_, _, nonce,
+                    _, _) =>
                 capturedNonces.Add(nonce.ToArray()))
             .Returns(Task.CompletedTask);
 
@@ -214,7 +232,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
@@ -224,7 +242,7 @@ public sealed class EncryptionServiceTests : IDisposable
 
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<byte[]>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -242,23 +260,24 @@ public sealed class EncryptionServiceTests : IDisposable
 
         var input = new ChaCha20Poly1305EncryptionInput(expectedKey);
 
-        byte[]? capturedKey = null;
+        ReadOnlyMemory<byte> capturedPassword = default;
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, byte[], byte[], ILogger, CancellationToken>((_, key, _, _, _) =>
-                capturedKey = key.ToArray())
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((_, password,
+                    _, _, _) =>
+                capturedPassword = password)
             .Returns(Task.CompletedTask);
 
         await _encryptionService.EncryptFileAsync(transferInstruction, input, _cancellationTokenSource.Token);
 
-        Assert.NotNull(capturedKey);
-        Assert.Equal(32, capturedKey.Length);
-        Assert.True(expectedKey.SequenceEqual(capturedKey),
+        Assert.False(capturedPassword.IsEmpty);
+        Assert.Equal(32, capturedPassword.Length);
+        Assert.True(capturedPassword.Span.SequenceEqual(expectedKey),
             "The encryption key passed to EncryptorBase should match the input key");
     }
 
@@ -278,7 +297,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
@@ -329,7 +348,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<byte[]>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
@@ -339,7 +358,7 @@ public sealed class EncryptionServiceTests : IDisposable
 
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<byte[]>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);

@@ -149,12 +149,12 @@ internal sealed class CryptoService(
         Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
 
         var transferInstruction = new FileTransferInstruction(filePath, destinationPath);
-        var encryptionInput = new XChaCha20Poly1305EncryptionInput(password);
 
         _logger.LogDebug("Encrypting file: {SourceFile} -> {DestinationFile}", filePath, destinationPath);
 
         try
         {
+            using var encryptionInput = new XChaCha20Poly1305EncryptionInput(password);
             await _encryptionService.EncryptFileAsync(transferInstruction, encryptionInput, cancellationToken);
         }
         catch (Exception ex)
@@ -188,12 +188,12 @@ internal sealed class CryptoService(
         Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
 
         var transferInstruction = new FileTransferInstruction(filePath, destinationPath);
-        var decryptionInput = new XChaCha20Poly1305DecryptionInput(password);
 
         _logger.LogDebug("Decrypting file: {SourceFile} -> {DestinationFile}", filePath, destinationPath);
 
         try
         {
+            using var decryptionInput = new XChaCha20Poly1305DecryptionInput(password);
             await _decryptionService.DecryptFileAsync(transferInstruction, decryptionInput, cancellationToken);
         }
         catch (Exception ex)

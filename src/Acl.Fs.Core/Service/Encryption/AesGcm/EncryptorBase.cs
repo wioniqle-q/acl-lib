@@ -44,7 +44,7 @@ internal sealed class EncryptorBase(
 
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
-        byte[] key,
+        ReadOnlyMemory<byte> password,
         byte[] nonce,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ internal sealed class EncryptorBase(
 
             using var bufferManager = new BufferManager(metadataBufferSize, NonceSize);
 
-            using var keyPreparation = _keyPreparationService.PrepareKey(key.AsSpan());
+            using var keyPreparation = _keyPreparationService.PrepareKey(password.Span);
             using var aesGcm = _aesGcmFactory.Create(keyPreparation.DerivedKey);
 
             await using var sourceStream =

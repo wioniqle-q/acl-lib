@@ -101,10 +101,7 @@ public sealed class ChaCha20Poly1305DecryptionInputTests
         var input1 = new ChaCha20Poly1305DecryptionInput(passwordMemory1);
         var input2 = new ChaCha20Poly1305DecryptionInput(passwordMemory2);
 
-        Assert.Equal(input1, input2);
-        Assert.True(input1 == input2);
-        Assert.False(input1 != input2);
-        Assert.Equal(input1.GetHashCode(), input2.GetHashCode());
+        Assert.True(input1.Password.Span.SequenceEqual(input2.Password.Span));
     }
 
     [Fact]
@@ -154,5 +151,33 @@ public sealed class ChaCha20Poly1305DecryptionInputTests
 
         Assert.Equal(passwordLength, input.Password.Length);
         Assert.Equal(password, input.Password.ToArray());
+    }
+
+    [Fact]
+    public void Dispose_ShouldZeroMemoryOfPassword()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        Assert.Equal(password, input.Password.ToArray());
+        input.Dispose();
+
+        var passwordAfterDispose = input.Password.ToArray();
+        Assert.All(passwordAfterDispose, b => Assert.Equal(0, b));
+    }
+
+    [Fact]
+    public void Dispose_CalledMultipleTimes_ShouldNotThrow()
+    {
+        var password = "test-password"u8.ToArray();
+        var passwordMemory = new ReadOnlyMemory<byte>(password);
+        var input = new ChaCha20Poly1305DecryptionInput(passwordMemory);
+
+        input.Dispose();
+        input.Dispose();
+        input.Dispose();
+
+        Assert.True(true);
     }
 }

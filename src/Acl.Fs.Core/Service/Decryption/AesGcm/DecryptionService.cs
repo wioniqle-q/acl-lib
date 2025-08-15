@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Acl.Fs.Core.Abstractions.Service.Decryption.AesGcm;
+﻿using Acl.Fs.Core.Abstractions.Service.Decryption.AesGcm;
 using Acl.Fs.Core.Models.AesGcm;
 using Microsoft.Extensions.Logging;
 using FileTransferInstruction = Acl.Fs.Core.Models.FileTransferInstruction;
@@ -14,7 +13,8 @@ internal sealed class DecryptionService(
     private readonly IDecryptorBase _decryptorBase =
         decryptorBase ?? throw new ArgumentNullException(nameof(decryptorBase));
 
-    private readonly ILogger<DecryptionService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<DecryptionService> _logger =
+        logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task DecryptFileAsync(
         FileTransferInstruction transferInstruction,
@@ -23,14 +23,10 @@ internal sealed class DecryptionService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        try
-        {
-            await _decryptorBase.ExecuteDecryptionProcessAsync(
-                transferInstruction, input.Password.Span.ToArray(), _logger, cancellationToken);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(input.Password.Span.ToArray());
-        }
+        await _decryptorBase.ExecuteDecryptionProcessAsync(
+            transferInstruction,
+            input.Password,
+            _logger,
+            cancellationToken);
     }
 }

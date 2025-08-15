@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.5.0-beta] - 2025-08-15
+
+### Changed
+
+- **API Breaking**: Encryption and decryption service interfaces now use `ReadOnlyMemory<byte>` instead of `byte[]` for password parameters
+
+### Security
+
+- **Disposal**: Encryption/decryption input models now implement `IDisposable` with automatic memory clearing using `CryptographicOperations.ZeroMemory()` but user should use "using" statement to ensure proper disposal
+
+### Technical
+
+- **Input Models Refactored**: 
+  - `AesEncryptionInput` and `AesDecryptionInput` converted to `readonly record struct` with `IDisposable` implementation
+  - `ChaCha20Poly1305EncryptionInput`, `ChaCha20Poly1305DecryptionInput`, `XChaCha20Poly1305EncryptionInput`, and `XChaCha20Poly1305DecryptionInput` updated to use `ReadOnlyMemory<byte>`
+- **Service Layer Updates**:
+  - All `IEncryptorBase` and `IDecryptorBase` interfaces updated to accept `ReadOnlyMemory<byte> password` parameter
+  - DecryptionService implementations cleaned up - removed redundant `finally` blocks with memory cleanup
+
 ## [0.4.0-beta] - 2025-08-15
 
 ### Changed

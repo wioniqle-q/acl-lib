@@ -24,6 +24,9 @@ internal sealed class OperationExecutor(
         var operationId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
         var operationLogger = _loggingService.CreateOperationLogger("encryption", operationId);
 
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var passwordMemory = new ReadOnlyMemory<byte>(passwordBytes);
+
         try
         {
             _logger.LogInformation("Starting encryption operation {OperationId} at {Timestamp} UTC", operationId,
@@ -38,9 +41,6 @@ internal sealed class OperationExecutor(
             _logger.LogInformation("Source folder: {SourceFolder}", sourceFolder);
             _logger.LogInformation("Destination folder: {DestinationFolder}", destinationFolder);
 
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
-            var passwordMemory = new ReadOnlyMemory<byte>(passwordBytes);
-
             using var cts = new CancellationTokenSource();
 
             Console.CancelKeyPress += (_, e) =>
@@ -54,8 +54,6 @@ internal sealed class OperationExecutor(
             };
 
             await _cryptoService.EncryptFolderAsync(sourceFolder, destinationFolder, passwordMemory, cts.Token);
-
-            CryptographicOperations.ZeroMemory(passwordBytes);
 
             _logger.LogInformation("Encryption operation {OperationId} completed successfully at {Timestamp} UTC",
                 operationId, DateTime.UtcNow);
@@ -78,12 +76,19 @@ internal sealed class OperationExecutor(
 
             return false;
         }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
     }
 
     public async Task<bool> ExecuteDecryptionAsync(string encryptedFolder, string decryptedFolder, string password)
     {
         var operationId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
         var operationLogger = _loggingService.CreateOperationLogger("decryption", operationId);
+
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var passwordMemory = new ReadOnlyMemory<byte>(passwordBytes);
 
         try
         {
@@ -99,9 +104,6 @@ internal sealed class OperationExecutor(
             _logger.LogInformation("Encrypted folder: {EncryptedFolder}", encryptedFolder);
             _logger.LogInformation("Decrypted folder: {DecryptedFolder}", decryptedFolder);
 
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
-            var passwordMemory = new ReadOnlyMemory<byte>(passwordBytes);
-
             using var cts = new CancellationTokenSource();
 
             Console.CancelKeyPress += (_, e) =>
@@ -115,8 +117,6 @@ internal sealed class OperationExecutor(
             };
 
             await _cryptoService.DecryptFolderAsync(encryptedFolder, decryptedFolder, passwordMemory, cts.Token);
-
-            CryptographicOperations.ZeroMemory(passwordBytes);
 
             _logger.LogInformation("Decryption operation {OperationId} completed successfully at {Timestamp} UTC",
                 operationId, DateTime.UtcNow);
@@ -138,6 +138,10 @@ internal sealed class OperationExecutor(
             operationLogger.Error(ex, "Error during decryption at {Timestamp} UTC", DateTime.UtcNow);
 
             return false;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
         }
     }
 }

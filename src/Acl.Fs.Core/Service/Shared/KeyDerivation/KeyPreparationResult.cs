@@ -15,24 +15,18 @@ internal sealed class KeyPreparationResult : IKeyPreparationResult
     private GCHandle _derivedKeyHandle;
     private int _disposed;
     private int _keyMemoryLocked;
-    private GCHandle _saltHandle;
-    private int _saltMemoryLocked;
 
     internal KeyPreparationResult(
         ReadOnlyMemory<byte> derivedKey,
         ReadOnlyMemory<byte> salt,
         GCHandle derivedKeyHandle,
-        GCHandle saltHandle,
         int keyMemoryLocked,
-        int saltMemoryLocked,
         IAuditLogger auditLogger)
     {
         _derivedKey = derivedKey;
         _salt = salt;
         _derivedKeyHandle = derivedKeyHandle;
-        _saltHandle = saltHandle;
         _keyMemoryLocked = keyMemoryLocked;
-        _saltMemoryLocked = saltMemoryLocked;
         _auditLogger = auditLogger;
     }
 
@@ -82,13 +76,6 @@ internal sealed class KeyPreparationResult : IKeyPreparationResult
                 if (Interlocked.CompareExchange(ref _keyMemoryLocked, 0, 1) is 1)
                     _derivedKeyHandle.UnlockMemory(_derivedKey.Length, _auditLogger);
                 _derivedKeyHandle.Free();
-            }
-
-            if (_saltHandle.IsAllocated)
-            {
-                if (Interlocked.CompareExchange(ref _saltMemoryLocked, 0, 1) is 1)
-                    _saltHandle.UnlockMemory(_salt.Length, _auditLogger);
-                _saltHandle.Free();
             }
         }
     }

@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Acl.Fs.Core.Abstractions.Service.Decryption.XChaCha20Poly1305;
+﻿using Acl.Fs.Core.Abstractions.Service.Decryption.XChaCha20Poly1305;
 using Acl.Fs.Core.Models.XChaCha20Poly1305;
 using Microsoft.Extensions.Logging;
 using FileTransferInstruction = Acl.Fs.Core.Models.FileTransferInstruction;
@@ -24,17 +23,10 @@ internal sealed class DecryptionService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        try
-        {
-            await _decryptorBase.ExecuteDecryptionProcessAsync(
-                transferInstruction,
-                input.Password.Span.ToArray(),
-                _logger,
-                cancellationToken);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(input.Password.Span.ToArray());
-        }
+        await _decryptorBase.ExecuteDecryptionProcessAsync(
+            transferInstruction,
+            input.Password,
+            _logger,
+            cancellationToken);
     }
 }

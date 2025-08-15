@@ -47,7 +47,7 @@ internal sealed class EncryptorBase(
 
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
-        byte[] key,
+        ReadOnlyMemory<byte> password,
         byte[] nonce,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -65,7 +65,7 @@ internal sealed class EncryptorBase(
 
             using var bufferManager = new BufferManager(metadataBufferSize, XChaCha20Poly1305NonceSize);
 
-            using var keyPreparation = _keyPreparationService.PrepareKey(key.AsSpan());
+            using var keyPreparation = _keyPreparationService.PrepareKey(password.Span);
             var algorithm = _xChaCha20Poly1305Factory.Create(keyPreparation.DerivedKey);
             using var cryptoKey = Key.Import(algorithm, keyPreparation.DerivedKey,
                 KeyBlobFormat.RawSymmetricKey);
@@ -79,7 +79,7 @@ internal sealed class EncryptorBase(
             await _auditService.AuditOutputStreamOpened(instruction.DestinationPath, cancellationToken);
 
             _metadataService.PrepareMetadata(nonce, sourceStream.Length, bufferManager.Salt,
-                keyPreparation.Salt.ToArray(),
+                keyPreparation.Salt,
                 bufferManager.MetadataBuffer, metadataBufferSize, XChaCha20Poly1305NonceSize);
             await _auditService.AuditHeaderPrepared(cancellationToken);
 

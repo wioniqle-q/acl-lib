@@ -85,21 +85,35 @@ public sealed class DecryptionServiceTests : IDisposable
         RandomNumberGenerator.Fill(decryptionKey);
         var input = new ChaCha20Poly1305DecryptionInput(decryptionKey);
 
+        ReadOnlyMemory<byte> capturedPassword = default;
+        FileTransferInstruction capturedInstruction = null!;
+
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ILogger, CancellationToken>((instruction, password,
+                _, _) =>
+            {
+                capturedInstruction = instruction;
+                capturedPassword = password;
+            })
             .Returns(Task.CompletedTask);
 
         await _decryptionService.DecryptFileAsync(transferInstruction, input, _cancellationTokenSource.Token);
 
         _mockDecryptorBase.Verify(x => x.ExecuteDecryptionProcessAsync(
-            It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.Is<byte[]>(key => key.Length == 32 && key.SequenceEqual(decryptionKey)),
+            It.IsAny<FileTransferInstruction>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             _mockLogger.Object,
             _cancellationTokenSource.Token), Times.Once);
+
+        Assert.Equal(sourcePath, capturedInstruction.SourcePath);
+        Assert.Equal(destinationPath, capturedInstruction.DestinationPath);
+        Assert.Equal(32, capturedPassword.Length);
+        Assert.True(capturedPassword.Span.SequenceEqual(decryptionKey));
     }
 
     [Fact]
@@ -120,7 +134,7 @@ public sealed class DecryptionServiceTests : IDisposable
 
         _mockDecryptorBase.Verify(x => x.ExecuteDecryptionProcessAsync(
             It.IsAny<FileTransferInstruction>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -140,7 +154,7 @@ public sealed class DecryptionServiceTests : IDisposable
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
@@ -162,22 +176,22 @@ public sealed class DecryptionServiceTests : IDisposable
 
         var input = new ChaCha20Poly1305DecryptionInput(expectedKey);
 
-        byte[]? capturedKey = null;
+        ReadOnlyMemory<byte> capturedPassword = default;
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, byte[], ILogger, CancellationToken>((_, key, _, _) =>
-                capturedKey = key.ToArray())
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ILogger, CancellationToken>((_, password, _, _) =>
+                capturedPassword = password)
             .Returns(Task.CompletedTask);
 
         await _decryptionService.DecryptFileAsync(transferInstruction, input, _cancellationTokenSource.Token);
 
-        Assert.NotNull(capturedKey);
-        Assert.Equal(32, capturedKey.Length);
-        Assert.True(expectedKey.SequenceEqual(capturedKey),
+        Assert.False(capturedPassword.IsEmpty);
+        Assert.Equal(32, capturedPassword.Length);
+        Assert.True(capturedPassword.Span.SequenceEqual(expectedKey),
             "The decryption key passed to DecryptorBase should match the input key");
     }
 
@@ -196,7 +210,7 @@ public sealed class DecryptionServiceTests : IDisposable
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(longRunningTaskCompletionSource.Task);
@@ -228,7 +242,7 @@ public sealed class DecryptionServiceTests : IDisposable
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -237,7 +251,7 @@ public sealed class DecryptionServiceTests : IDisposable
 
         _mockDecryptorBase.Verify(x => x.ExecuteDecryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -278,7 +292,7 @@ public sealed class DecryptionServiceTests : IDisposable
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -287,7 +301,7 @@ public sealed class DecryptionServiceTests : IDisposable
 
         _mockDecryptorBase.Verify(x => x.ExecuteDecryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
@@ -314,30 +328,33 @@ public sealed class DecryptionServiceTests : IDisposable
         var input1 = new ChaCha20Poly1305DecryptionInput(decryptionKey1);
         var input2 = new ChaCha20Poly1305DecryptionInput(decryptionKey2);
 
-        var capturedKeys = new List<byte[]>();
+        var capturedPasswords = new List<ReadOnlyMemory<byte>>();
         var capturedInstructions = new List<FileTransferInstruction>();
 
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, byte[], ILogger, CancellationToken>((instruction, key, _, _) =>
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ILogger, CancellationToken>((instruction, password,
+                _, _) =>
             {
                 capturedInstructions.Add(instruction);
-                capturedKeys.Add(key.ToArray());
+                capturedPasswords.Add(password);
             })
             .Returns(Task.CompletedTask);
 
         await _decryptionService.DecryptFileAsync(transferInstruction1, input1, _cancellationTokenSource.Token);
         await _decryptionService.DecryptFileAsync(transferInstruction2, input2, _cancellationTokenSource.Token);
 
-        Assert.Equal(2, capturedKeys.Count);
+        Assert.Equal(2, capturedPasswords.Count);
         Assert.Equal(2, capturedInstructions.Count);
 
-        Assert.True(decryptionKey1.SequenceEqual(capturedKeys[0]), "First decryption should use the correct key");
-        Assert.True(decryptionKey2.SequenceEqual(capturedKeys[1]), "Second decryption should use the correct key");
+        Assert.True(capturedPasswords[0].Span.SequenceEqual(decryptionKey1),
+            "First decryption should use the correct key");
+        Assert.True(capturedPasswords[1].Span.SequenceEqual(decryptionKey2),
+            "Second decryption should use the correct key");
 
         Assert.Equal(sourcePath1, capturedInstructions[0].SourcePath);
         Assert.Equal(destinationPath1, capturedInstructions[0].DestinationPath);
@@ -358,7 +375,7 @@ public sealed class DecryptionServiceTests : IDisposable
         _mockDecryptorBase
             .Setup(x => x.ExecuteDecryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -367,7 +384,7 @@ public sealed class DecryptionServiceTests : IDisposable
 
         _mockDecryptorBase.Verify(x => x.ExecuteDecryptionProcessAsync(
             It.IsAny<FileTransferInstruction>(),
-            It.Is<byte[]>(key => key.Length == 32),
+            It.Is<ReadOnlyMemory<byte>>(password => password.Length == 32),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }

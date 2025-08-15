@@ -47,7 +47,7 @@ internal sealed class DecryptorBase(
 
     public async Task ExecuteDecryptionProcessAsync(
         FileTransferInstruction instruction,
-        byte[] key,
+        ReadOnlyMemory<byte> password,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -83,7 +83,7 @@ internal sealed class DecryptorBase(
             await _auditService.AuditHeaderRead(cancellationToken);
 
             using var keyPreparation =
-                _keyPreparationService.PrepareKeyWithSalt(key.AsSpan(), header.Argon2Salt.AsSpan());
+                _keyPreparationService.PrepareKeyWithSalt(password.Span, header.Argon2Salt.AsSpan());
             var algorithm = _xChaCha20Poly1305Factory.Create(keyPreparation.DerivedKey);
             using var cryptoKey = Key.Import(algorithm, keyPreparation.DerivedKey,
                 KeyBlobFormat.RawSymmetricKey);
