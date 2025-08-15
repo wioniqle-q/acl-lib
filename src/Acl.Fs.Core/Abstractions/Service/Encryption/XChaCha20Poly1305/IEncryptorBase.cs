@@ -8,7 +8,7 @@ internal interface IEncryptorBase
     Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
         ReadOnlyMemory<byte> password,
-        byte[] nonce,
+        ReadOnlyMemory<byte> nonce,
         ILogger logger,
         CancellationToken cancellationToken);
 }

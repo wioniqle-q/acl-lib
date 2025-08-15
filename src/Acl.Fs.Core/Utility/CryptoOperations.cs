@@ -6,7 +6,7 @@ namespace Acl.Fs.Core.Utility;
 
 internal static class CryptoOperations
 {
-    internal static void PrecomputeSalt(byte[] originalNonce, byte[] salt)
+    internal static void PrecomputeSalt(ReadOnlySpan<byte> originalNonce, byte[] salt)
     {
         Span<byte> input = stackalloc byte[8];
 
@@ -16,14 +16,14 @@ internal static class CryptoOperations
 
             if (IsRunningOnGitHubActions)
             {
-                using var hmac = new HMACSHA256(originalNonce);
+                using var hmac = new HMACSHA256(originalNonce.ToArray());
                 if (hmac.TryComputeHash(input, salt, out var bytesWritten) is not true ||
                     bytesWritten != SaltSize)
                     throw new CryptographicException("Failed to derive salt for cryptographic operation.");
             }
             else
             {
-                using var hmac = new HMACSHA3_512(originalNonce);
+                using var hmac = new HMACSHA3_512(originalNonce.ToArray());
                 if (hmac.TryComputeHash(input, salt, out var bytesWritten) is not true ||
                     bytesWritten != SaltSize)
                     throw new CryptographicException("Failed to derive salt for cryptographic operation.");

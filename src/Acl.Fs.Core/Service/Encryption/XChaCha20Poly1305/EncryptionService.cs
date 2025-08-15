@@ -35,7 +35,7 @@ internal sealed class EncryptionService(
             await _encryptorBase.ExecuteEncryptionProcessAsync(
                 transferInstruction,
                 input.Password,
-                nonceBuffer.AsSpan(0, XChaCha20Poly1305NonceSize).ToArray(),
+                nonceBuffer.AsMemory(0, XChaCha20Poly1305NonceSize),
                 _logger,
                 cancellationToken);
         }

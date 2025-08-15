@@ -35,7 +35,7 @@ internal sealed class EncryptionService(
             await _encryptorBase.ExecuteEncryptionProcessAsync(
                 transferInstruction,
                 input.Password,
-                nonceBuffer.AsSpan(0, NonceSize).ToArray(),
+                nonceBuffer.AsMemory(0, NonceSize),
                 _logger,
                 cancellationToken);
         }

@@ -8,14 +8,16 @@ namespace Acl.Fs.Core.Service.Encryption.Shared.Metadata;
 
 internal sealed class MetadataService : IMetadataService
 {
-    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, ReadOnlySpan<byte> argon2Salt,
+    public void PrepareMetadata(ReadOnlySpan<byte> nonce, long originalSize, byte[] chaCha20Salt,
+        ReadOnlySpan<byte> argon2Salt,
         byte[] metadataBuffer,
         int metadataBufferSize)
     {
         PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt, metadataBuffer, metadataBufferSize, NonceSize);
     }
 
-    public void PrepareMetadata(byte[] nonce, long originalSize, byte[] chaCha20Salt, ReadOnlySpan<byte> argon2Salt,
+    public void PrepareMetadata(ReadOnlySpan<byte> nonce, long originalSize, byte[] chaCha20Salt,
+        ReadOnlySpan<byte> argon2Salt,
         byte[] metadataBuffer,
         int metadataBufferSize, int nonceSize)
     {
@@ -28,7 +30,7 @@ internal sealed class MetadataService : IMetadataService
 
         var offset = VersionConstants.VersionHeaderSize;
 
-        nonce.AsSpan(0, nonceSize).CopyTo(metadataBuffer.AsSpan(offset));
+        nonce[..nonceSize].CopyTo(metadataBuffer.AsSpan(offset));
         offset += nonceSize;
 
         BinaryPrimitives.WriteInt64LittleEndian(metadataBuffer.AsSpan(offset), originalSize);

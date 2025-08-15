@@ -88,17 +88,18 @@ public sealed class EncryptionServiceTests : IDisposable
         var input = new XChaCha20Poly1305EncryptionInput(encryptionKey);
 
         ReadOnlyMemory<byte> capturedPassword = default;
-        byte[] capturedNonce = null!;
+        ReadOnlyMemory<byte> capturedNonce = default;
         FileTransferInstruction capturedInstruction = null!;
 
         _mockEncryptorBase
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((instruction,
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, ILogger, CancellationToken>((
+                instruction,
                 password, nonce, _, _) =>
             {
                 capturedInstruction = instruction;
@@ -112,7 +113,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.IsAny<FileTransferInstruction>(),
             It.IsAny<ReadOnlyMemory<byte>>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             _mockLogger.Object,
             _cancellationTokenSource.Token), Times.Once);
 
@@ -142,7 +143,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.IsAny<FileTransferInstruction>(),
             It.IsAny<ReadOnlyMemory<byte>>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -163,7 +164,7 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
@@ -189,10 +190,11 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((_, _, nonce,
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, ILogger, CancellationToken>((
+                    _, _, nonce,
                     _, _) =>
                 capturedNonces.Add(nonce.ToArray()))
             .Returns(Task.CompletedTask);
@@ -234,7 +236,7 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -244,7 +246,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
             It.IsAny<ReadOnlyMemory<byte>>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -266,10 +268,11 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, byte[], ILogger, CancellationToken>((_, password,
+            .Callback<FileTransferInstruction, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, ILogger, CancellationToken>((
+                    _, password,
                     _, _, _) =>
                 capturedPassword = password)
             .Returns(Task.CompletedTask);
@@ -299,7 +302,7 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(longRunningTaskCompletionSource.Task);
@@ -350,7 +353,7 @@ public sealed class EncryptionServiceTests : IDisposable
             .Setup(x => x.ExecuteEncryptionProcessAsync(
                 It.IsAny<FileTransferInstruction>(),
                 It.IsAny<ReadOnlyMemory<byte>>(),
-                It.IsAny<byte[]>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
                 It.IsAny<ILogger>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -360,7 +363,7 @@ public sealed class EncryptionServiceTests : IDisposable
         _mockEncryptorBase.Verify(x => x.ExecuteEncryptionProcessAsync(
             It.Is<FileTransferInstruction>(t => t.SourcePath == sourcePath && t.DestinationPath == destinationPath),
             It.IsAny<ReadOnlyMemory<byte>>(),
-            It.IsAny<byte[]>(),
+            It.IsAny<ReadOnlyMemory<byte>>(),
             It.IsAny<ILogger>(),
             It.IsAny<CancellationToken>()), Times.Once);
 

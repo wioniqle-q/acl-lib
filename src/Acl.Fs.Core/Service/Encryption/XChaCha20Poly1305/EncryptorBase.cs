@@ -48,7 +48,7 @@ internal sealed class EncryptorBase(
     public async Task ExecuteEncryptionProcessAsync(
         FileTransferInstruction instruction,
         ReadOnlyMemory<byte> password,
-        byte[] nonce,
+        ReadOnlyMemory<byte> nonce,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -78,7 +78,7 @@ internal sealed class EncryptorBase(
                 CryptoPrimitives.CreateOutputStream(instruction.DestinationPath, fileOptions, logger);
             await _auditService.AuditOutputStreamOpened(instruction.DestinationPath, cancellationToken);
 
-            _metadataService.PrepareMetadata(nonce, sourceStream.Length, bufferManager.Salt,
+            _metadataService.PrepareMetadata(nonce.Span, sourceStream.Length, bufferManager.Salt,
                 keyPreparation.Salt,
                 bufferManager.MetadataBuffer, metadataBufferSize, XChaCha20Poly1305NonceSize);
             await _auditService.AuditHeaderPrepared(cancellationToken);

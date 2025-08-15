@@ -9,11 +9,13 @@ internal sealed class V0ValidationStrategy : IVersionValidationStrategy
 {
     public void Validate(byte minorVersion)
     {
-        // For beta version 0.x, minor versions 1-4 are currently supported
+        // For beta version 0.x, minor versions 1-6 are currently supported
         // v0.1.x: Initial release with AES-GCM, ChaCha20Poly1305 and XChaCha20Poly1305 support
-        // v0.2.x: Added dynamic salt size support
+        // v0.2.x: Added dynamic salt size support and cross-platform shell notifications
         // v0.3.x: Platform-specific configuration and process-level optimizations
-        // v0.4.x: Memory locking operations and audit logging integration
+        // v0.4.x: Key preparation service refactoring 
+        // v0.5.x: Password parameters refactored to use ReadOnlyMemory<byte> with disposal
+        // v0.6.x: Nonce parameters refactored to use ReadOnlyMemory<byte> 
         if (minorVersion > VersionConstants.CurrentMinorVersion)
             throw new VersionValidationException(
                 string.Format(ErrorMessages.FutureMinorVersionNotSupported,

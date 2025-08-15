@@ -26,7 +26,8 @@ public sealed class MetadataServiceTests
 
         var originalChaCha20Salt = chaCha20Salt.ToArray();
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             metadataBufferSize);
 
         Assert.Equal(VersionConstants.CurrentMajorVersion, metadataBuffer[0]);
@@ -67,7 +68,8 @@ public sealed class MetadataServiceTests
         new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             metadataBufferSize);
 
         var extractedSize = BinaryPrimitives.ReadInt64LittleEndian(metadataBuffer.AsSpan(offset));
@@ -90,7 +92,8 @@ public sealed class MetadataServiceTests
         new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             metadataBufferSize);
 
         var extractedSize = BinaryPrimitives.ReadInt64LittleEndian(metadataBuffer.AsSpan(offset));
@@ -114,7 +117,8 @@ public sealed class MetadataServiceTests
         new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             metadataBufferSize);
 
         Assert.Equal(VersionConstants.CurrentMajorVersion, metadataBuffer[0]);
@@ -147,9 +151,11 @@ public sealed class MetadataServiceTests
         var metadataBuffer2 = new byte[VersionConstants.HeaderSize];
         var metadataBufferSize = VersionConstants.UnalignedHeaderSize;
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer1,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer1,
             metadataBufferSize);
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer2,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer2,
             metadataBufferSize);
 
         Assert.Equal(metadataBuffer1.AsSpan(0, metadataBufferSize).ToArray(),
@@ -176,9 +182,11 @@ public sealed class MetadataServiceTests
         var metadataBuffer2 = new byte[VersionConstants.HeaderSize];
         var metadataBufferSize = VersionConstants.UnalignedHeaderSize;
 
-        _metadataService.PrepareMetadata(nonce1, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer1,
+        _metadataService.PrepareMetadata(nonce1.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer1,
             metadataBufferSize);
-        _metadataService.PrepareMetadata(nonce2, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer2,
+        _metadataService.PrepareMetadata(nonce2.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer2,
             metadataBufferSize);
 
         var salt1 = metadataBuffer1.AsSpan(offset, SaltSize).ToArray();
@@ -307,7 +315,8 @@ public sealed class MetadataServiceTests
         new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             expectedBufferSize, nonceSize);
 
         var extractedNonce = metadataBuffer.AsSpan(offset, nonceSize).ToArray();
@@ -330,7 +339,8 @@ public sealed class MetadataServiceTests
         new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
 
-        _metadataService.PrepareMetadata(nonce, originalSize, chaCha20Salt, argon2Salt.AsSpan(), metadataBuffer,
+        _metadataService.PrepareMetadata(nonce.AsSpan(), originalSize, chaCha20Salt, argon2Salt.AsSpan(),
+            metadataBuffer,
             metadataBufferSize);
 
         var extractedSize = BinaryPrimitives.ReadInt64LittleEndian(metadataBuffer.AsSpan(offset));

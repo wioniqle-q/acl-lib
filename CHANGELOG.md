@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.6.0-beta] - 2025-08-15
+
+### Changed
+
+- **API Breaking**: `IEncryptorBase` interfaces now use `ReadOnlyMemory<byte>` instead of `byte[]` for nonce parameters across all encryption algorithms (AES-GCM, ChaCha20-Poly1305, XChaCha20-Poly1305)
+- **Performance**: Removed unnecessary `ToArray()` calls in encryption services - nonce data is now passed directly from CryptoPool buffers without copying
+
 ## [0.5.0-beta] - 2025-08-15
 
 ### Changed
