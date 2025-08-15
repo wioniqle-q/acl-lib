@@ -17,7 +17,7 @@ internal sealed class KeyPreparationService(
     private readonly IKeyDerivationService _keyDerivationService =
         keyDerivationService ?? throw new ArgumentNullException(nameof(keyDerivationService));
 
-    public IKeyPreparationResult PrepareKey(ReadOnlySpan<byte> sourceKey)
+    public IKeyPreparationResult PrepareKey(ReadOnlySpan<byte> password)
     {
         var saltBuffer = CryptoPool.Rent(_keyDerivationService.SaltSize);
 
@@ -33,7 +33,7 @@ internal sealed class KeyPreparationService(
             saltData = saltBuffer.AsSpan(0, _keyDerivationService.SaltSize).ToArray();
 
             derivedKeyData = _keyDerivationService.DeriveKey(
-                sourceKey,
+                password,
                 saltBuffer.AsSpan(0, _keyDerivationService.SaltSize),
                 CryptoConstants.Argon2IdOutputKeyLength);
 
@@ -69,10 +69,10 @@ internal sealed class KeyPreparationService(
         }
     }
 
-    public IKeyPreparationResult PrepareKeyWithSalt(ReadOnlySpan<byte> sourceKey, ReadOnlySpan<byte> salt)
+    public IKeyPreparationResult PrepareKeyWithSalt(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt)
     {
         var derivedKeyData = _keyDerivationService.DeriveKey(
-            sourceKey,
+            password,
             salt,
             CryptoConstants.Argon2IdOutputKeyLength);
 
