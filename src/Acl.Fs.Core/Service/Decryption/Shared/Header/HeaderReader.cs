@@ -2,6 +2,7 @@
 using Acl.Fs.Constant.Versioning;
 using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Abstractions.Service.Decryption.Shared.Header;
+using Acl.Fs.Core.Utility;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
 
 namespace Acl.Fs.Core.Service.Decryption.Shared.Header;
@@ -51,8 +52,11 @@ internal sealed class HeaderReader(IFileVersionValidator versionValidator) : IHe
         var originalSize = BinaryPrimitives.ReadInt64LittleEndian(metadataSpan[offset..]);
         offset += sizeof(long);
 
-        metadataSpan.Slice(offset, SaltSize).CopyTo(chaCha20Salt);
+        var headerSalt = metadataSpan.Slice(offset, SaltSize);
+        headerSalt.CopyTo(chaCha20Salt);
         offset += SaltSize;
+
+        CryptoOperations.ValidateHeaderSalt(nonce, headerSalt);
 
         var argon2Salt = new byte[Argon2IdSaltSize];
         metadataSpan.Slice(offset, Argon2IdSaltSize).CopyTo(argon2Salt);

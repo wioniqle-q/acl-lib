@@ -251,6 +251,110 @@ public sealed class CryptoOperationsTests
         Assert.Equal(salt, salt2);
     }
 
+
+    [Fact]
+    public void ValidateHeaderSalt_ValidSalt_DoesNotThrow()
+    {
+        var nonce = new byte[16];
+        new Random(42).NextBytes(nonce);
+
+        var expectedSalt = new byte[SaltSize];
+        CryptoOperations.PrecomputeSalt(nonce.AsSpan(), expectedSalt.AsSpan());
+
+        var exception = Record.Exception(() =>
+            CryptoOperations.ValidateHeaderSalt(nonce.AsSpan(), expectedSalt.AsSpan()));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateHeaderSalt_InvalidSalt_ThrowsCryptographicException()
+    {
+        var nonce = new byte[16];
+        var invalidSalt = new byte[SaltSize];
+
+        new Random(42).NextBytes(nonce);
+        new Random(84).NextBytes(invalidSalt);
+
+        var exception = Assert.Throws<CryptographicException>(() =>
+            CryptoOperations.ValidateHeaderSalt(nonce.AsSpan(), invalidSalt.AsSpan()));
+
+        Assert.Contains("Header salt does not match computed salt", exception.Message);
+        Assert.Contains("Possible tampering or corruption detected", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(16)]
+    [InlineData(24)]
+    [InlineData(32)]
+    public void ValidateHeaderSalt_DifferentNonceSizes_ValidatesCorrectly(int nonceSize)
+    {
+        var nonce = new byte[nonceSize];
+        new Random(42).NextBytes(nonce);
+
+        var expectedSalt = new byte[SaltSize];
+        CryptoOperations.PrecomputeSalt(nonce.AsSpan(), expectedSalt.AsSpan());
+
+        var exception = Record.Exception(() =>
+            CryptoOperations.ValidateHeaderSalt(nonce.AsSpan(), expectedSalt.AsSpan()));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateHeaderSalt_ModifiedSingleByte_ThrowsCryptographicException()
+    {
+        var nonce = new byte[16];
+        new Random(42).NextBytes(nonce);
+
+        var validSalt = new byte[SaltSize];
+        CryptoOperations.PrecomputeSalt(nonce.AsSpan(), validSalt.AsSpan());
+
+        var corruptedSalt = new byte[SaltSize];
+        validSalt.CopyTo(corruptedSalt, 0);
+        corruptedSalt[0] ^= 0x01;
+
+        var exception = Assert.Throws<CryptographicException>(() =>
+            CryptoOperations.ValidateHeaderSalt(nonce.AsSpan(), corruptedSalt.AsSpan()));
+
+        Assert.Contains("Header salt does not match computed salt", exception.Message);
+        Assert.Contains("Possible tampering or corruption detected", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateHeaderSalt_WrongSaltSize_ThrowsCryptographicException()
+    {
+        var nonce = new byte[16];
+        new Random(42).NextBytes(nonce);
+
+        var wrongSizeSalt = new byte[SaltSize - 1];
+        new Random(84).NextBytes(wrongSizeSalt);
+
+        var exception = Assert.Throws<CryptographicException>(() =>
+            CryptoOperations.ValidateHeaderSalt(nonce.AsSpan(), wrongSizeSalt.AsSpan()));
+
+        Assert.Contains("Header salt does not match computed salt", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateHeaderSalt_SameNonceDifferentInstance_ValidatesSuccessfully()
+    {
+        var originalNonce = new byte[16];
+        new Random(42).NextBytes(originalNonce);
+
+        var nonceCopy = new byte[16];
+        originalNonce.CopyTo(nonceCopy, 0);
+
+        var expectedSalt = new byte[SaltSize];
+        CryptoOperations.PrecomputeSalt(originalNonce.AsSpan(), expectedSalt.AsSpan());
+
+        var exception = Record.Exception(() =>
+            CryptoOperations.ValidateHeaderSalt(nonceCopy.AsSpan(), expectedSalt.AsSpan()));
+
+        Assert.Null(exception);
+    }
+
     private static bool IsAllZeros(byte[] array)
     {
         return array.All(b => b == 0);

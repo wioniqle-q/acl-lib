@@ -1,6 +1,8 @@
 ﻿using System.Buffers.Binary;
+using System.Security.Cryptography;
 using Acl.Fs.Core.Abstractions;
 using Acl.Fs.Core.Service.Decryption.Shared.Header;
+using Acl.Fs.Core.Utility;
 using Moq;
 using static Acl.Fs.Constant.Versioning.VersionConstants;
 using static Acl.Fs.Constant.Cryptography.CryptoConstants;
@@ -29,8 +31,9 @@ public sealed class HeaderReaderTests
         var metadataBuffer = new byte[HeaderSize];
 
         new Random(42).NextBytes(nonce);
-        new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
+
+        CryptoOperations.PrecomputeSalt(nonce.AsSpan(), chaCha20Salt.AsSpan());
 
         metadataBuffer[0] = CurrentMajorVersion;
         metadataBuffer[1] = CurrentMinorVersion;
@@ -61,6 +64,50 @@ public sealed class HeaderReaderTests
         Assert.Equal(nonce, header.Nonce);
         Assert.Equal(chaCha20Salt, header.ChaCha20Salt);
         Assert.Equal(argon2Salt, header.Argon2Salt);
+        Assert.Equal(chaCha20Salt, resultChaCha20Salt);
+
+        _versionValidatorMock.Verify(x => x.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReadHeaderAsync_InvalidSalt_ThrowsCryptographicException()
+    {
+        const long originalSize = 1024L;
+
+        var nonce = new byte[NonceSize];
+        var invalidChaCha20Salt = new byte[SaltSize];
+        var argon2Salt = new byte[Argon2IdSaltSize];
+        var metadataBuffer = new byte[HeaderSize];
+
+        new Random(42).NextBytes(nonce);
+        new Random(84).NextBytes(invalidChaCha20Salt);
+        new Random(126).NextBytes(argon2Salt);
+
+        metadataBuffer[0] = CurrentMajorVersion;
+        metadataBuffer[1] = CurrentMinorVersion;
+
+        var offset = VersionHeaderSize;
+        nonce.CopyTo(metadataBuffer, offset);
+        offset += NonceSize;
+
+        BinaryPrimitives.WriteInt64LittleEndian(metadataBuffer.AsSpan(offset), originalSize);
+        offset += sizeof(long);
+
+        invalidChaCha20Salt.CopyTo(metadataBuffer, offset);
+        offset += SaltSize;
+
+        argon2Salt.CopyTo(metadataBuffer, offset);
+
+        using var memoryStream = new MemoryStream(metadataBuffer);
+        var resultChaCha20Salt = new byte[SaltSize];
+
+        _versionValidatorMock.Setup(x => x.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion));
+
+        var exception = await Assert.ThrowsAsync<CryptographicException>(() =>
+            _headerReader.ReadHeaderAsync(memoryStream, metadataBuffer, resultChaCha20Salt,
+                UnalignedHeaderSize, CancellationToken.None));
+
+        Assert.Contains("Header salt does not match computed salt", exception.Message);
 
         _versionValidatorMock.Verify(x => x.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion), Times.Once);
     }
@@ -139,8 +186,9 @@ public sealed class HeaderReaderTests
         var metadataBuffer = new byte[headerSize];
 
         new Random(42).NextBytes(nonce);
-        new Random(84).NextBytes(chaCha20Salt);
         new Random(126).NextBytes(argon2Salt);
+
+        CryptoOperations.PrecomputeSalt(nonce.AsSpan(), chaCha20Salt.AsSpan());
 
         metadataBuffer[0] = CurrentMajorVersion;
         metadataBuffer[1] = CurrentMinorVersion;
@@ -167,6 +215,9 @@ public sealed class HeaderReaderTests
 
         Assert.Equal(nonce, header.Nonce);
         Assert.Equal(nonceSize, header.Nonce.Length);
+        Assert.Equal(chaCha20Salt, resultChaCha20Salt);
+
+        _versionValidatorMock.Verify(x => x.ValidateVersion(CurrentMajorVersion, CurrentMinorVersion), Times.Once);
     }
 
     [Fact]

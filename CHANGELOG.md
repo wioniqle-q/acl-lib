@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 **Note:** This changelog is updated periodically and may not reflect the most recent changes immediately.
 
+## [0.7.0-beta] - 2025-08-16
+
+### Added
+- Salt validation logic into `ValidateHeaderSalt()` method
+
 ## [0.6.0-beta] - 2025-08-15
 
 ### Changed

@@ -6,7 +6,7 @@ namespace Acl.Fs.Core.Utility;
 
 internal static class CryptoOperations
 {
-    internal static void PrecomputeSalt(ReadOnlySpan<byte> originalNonce, byte[] salt)
+    internal static void PrecomputeSalt(ReadOnlySpan<byte> originalNonce, Span<byte> salt)
     {
         Span<byte> input = stackalloc byte[8];
 
@@ -35,7 +35,7 @@ internal static class CryptoOperations
         }
         finally
         {
-            input.Clear();
+            CryptographicOperations.ZeroMemory(input);
         }
     }
 
@@ -100,6 +100,24 @@ internal static class CryptoOperations
             {
                 input.Clear();
             }
+        }
+    }
+
+    internal static void ValidateHeaderSalt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> headerSalt)
+    {
+        Span<byte> computedSalt = stackalloc byte[SaltSize];
+
+        try
+        {
+            PrecomputeSalt(nonce, computedSalt);
+
+            if (CryptographicOperations.FixedTimeEquals(computedSalt, headerSalt) is not true)
+                throw new CryptographicException(
+                    "Header salt does not match computed salt. Possible tampering or corruption detected.");
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(computedSalt);
         }
     }
 }
