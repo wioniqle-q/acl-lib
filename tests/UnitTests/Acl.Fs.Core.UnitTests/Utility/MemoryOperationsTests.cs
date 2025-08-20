@@ -31,9 +31,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void LockMemory_WithValidHandle_ShouldReturnExpectedResult()
     {
-        const int size = 1024;
-
-        var result = _validHandle.LockMemory(size);
+        var result = _validHandle.LockMemory(1024, _mockAuditLogger.Object);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             Assert.True(result || result is not true);
@@ -44,9 +42,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void LockMemory_WithValidHandleAndAuditLogger_ShouldReturnExpectedResult()
     {
-        const int size = 1024;
-
-        var result = _validHandle.LockMemory(size, _mockAuditLogger.Object);
+        var result = _validHandle.LockMemory(1024, _mockAuditLogger.Object);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -67,7 +63,7 @@ public sealed class MemoryOperationsTests : IDisposable
     {
         var invalidHandle = new GCHandle();
 
-        var result = invalidHandle.LockMemory(1024);
+        var result = invalidHandle.LockMemory(1024, _mockAuditLogger.Object);
 
         Assert.False(result);
     }
@@ -92,7 +88,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void LockMemory_WithZeroSize_ShouldHandleGracefully()
     {
-        var result = _validHandle.LockMemory(0);
+        var result = _validHandle.LockMemory(0, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -100,7 +96,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void LockMemory_WithNegativeSize_ShouldHandleGracefully()
     {
-        var result = _validHandle.LockMemory(-1);
+        var result = _validHandle.LockMemory(-1, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -108,9 +104,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void UnlockMemory_WithValidHandle_ShouldReturnExpectedResult()
     {
-        const int size = 1024;
-
-        var result = _validHandle.UnlockMemory(size);
+        var result = _validHandle.UnlockMemory(1024, _mockAuditLogger.Object);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             Assert.True(result || result is not true);
@@ -121,9 +115,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void UnlockMemory_WithValidHandleAndAuditLogger_ShouldReturnExpectedResult()
     {
-        const int size = 1024;
-
-        var result = _validHandle.UnlockMemory(size, _mockAuditLogger.Object);
+        var result = _validHandle.UnlockMemory(1024, _mockAuditLogger.Object);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -144,7 +136,7 @@ public sealed class MemoryOperationsTests : IDisposable
     {
         var invalidHandle = new GCHandle();
 
-        var result = invalidHandle.UnlockMemory(1024);
+        var result = invalidHandle.UnlockMemory(1024, _mockAuditLogger.Object);
 
         Assert.False(result);
     }
@@ -169,7 +161,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void UnlockMemory_WithZeroSize_ShouldHandleGracefully()
     {
-        var result = _validHandle.UnlockMemory(0);
+        var result = _validHandle.UnlockMemory(0, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -177,7 +169,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [Fact]
     public void UnlockMemory_WithNegativeSize_ShouldHandleGracefully()
     {
-        var result = _validHandle.UnlockMemory(-1);
+        var result = _validHandle.UnlockMemory(-1, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -187,8 +179,8 @@ public sealed class MemoryOperationsTests : IDisposable
     {
         const int size = 1024;
 
-        var lockResult = _validHandle.LockMemory(size);
-        var unlockResult = _validHandle.UnlockMemory(size);
+        var lockResult = _validHandle.LockMemory(size, _mockAuditLogger.Object);
+        var unlockResult = _validHandle.UnlockMemory(size, _mockAuditLogger.Object);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -233,7 +225,7 @@ public sealed class MemoryOperationsTests : IDisposable
     {
         for (var i = 0; i < 3; i++)
         {
-            var result = _validHandle.LockMemory(1024);
+            var result = _validHandle.LockMemory(1024, _mockAuditLogger.Object);
 
             Assert.True(result || result is not true);
         }
@@ -244,7 +236,7 @@ public sealed class MemoryOperationsTests : IDisposable
     {
         for (var i = 0; i < 3; i++)
         {
-            var result = _validHandle.UnlockMemory(1024);
+            var result = _validHandle.UnlockMemory(1024, _mockAuditLogger.Object);
             Assert.True(result || result is not true);
         }
     }
@@ -257,7 +249,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [InlineData(4096)]
     public void LockMemory_WithVariousSizes_ShouldHandleCorrectly(int size)
     {
-        var result = _validHandle.LockMemory(size);
+        var result = _validHandle.LockMemory(size, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -270,7 +262,7 @@ public sealed class MemoryOperationsTests : IDisposable
     [InlineData(4096)]
     public void UnlockMemory_WithVariousSizes_ShouldHandleCorrectly(int size)
     {
-        var result = _validHandle.UnlockMemory(size);
+        var result = _validHandle.UnlockMemory(size, _mockAuditLogger.Object);
 
         Assert.True(result || result is not true);
     }
@@ -300,7 +292,7 @@ public sealed class MemoryOperationsTests : IDisposable
         var tempHandle = GCHandle.Alloc(tempData, GCHandleType.Pinned);
 
         tempHandle.Free();
-        var result = tempHandle.LockMemory(512);
+        var result = tempHandle.LockMemory(512, _mockAuditLogger.Object);
 
         Assert.False(result);
     }
@@ -312,7 +304,7 @@ public sealed class MemoryOperationsTests : IDisposable
         var tempHandle = GCHandle.Alloc(tempData, GCHandleType.Pinned);
 
         tempHandle.Free();
-        var result = tempHandle.UnlockMemory(512);
+        var result = tempHandle.UnlockMemory(512, _mockAuditLogger.Object);
 
         Assert.False(result);
     }

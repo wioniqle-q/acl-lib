@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Acl.Fs.Stream.Implementation.PlatformConfiguration;
 
-internal sealed class WindowsPlatformConfiguration(ILogger? logger = null) : IPlatformConfiguration
+internal sealed class WindowsPlatformConfiguration(ILogger logger) : IPlatformConfiguration
 {
     private static readonly Lazy<bool> ProcessConfigured =
         new(ConfigureProcess, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -15,7 +15,7 @@ internal sealed class WindowsPlatformConfiguration(ILogger? logger = null) : IPl
 
         ConfigureFileSpecificSettings(stream);
 
-        logger?.LogDebug(LogMessages.WindowsConfiguration);
+        logger.LogDebug(LogMessages.WindowsConfiguration);
     }
 
     private static bool ConfigureProcess()
@@ -27,6 +27,6 @@ internal sealed class WindowsPlatformConfiguration(ILogger? logger = null) : IPl
     {
         if (stream is not FileStream fileStream) return;
 
-        logger?.LogDebug(LogMessages.FileSpecificSettingsConfigured, fileStream.Name);
+        logger.LogDebug(LogMessages.FileSpecificSettingsConfigured, fileStream.Name);
     }
 }

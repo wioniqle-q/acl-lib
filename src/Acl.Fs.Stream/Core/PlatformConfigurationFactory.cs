@@ -8,7 +8,7 @@ namespace Acl.Fs.Stream.Core;
 
 internal static class PlatformConfigurationFactory
 {
-    public static IPlatformConfiguration Create(ILogger? logger = null)
+    public static IPlatformConfiguration Create(ILogger logger)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return new WindowsPlatformConfiguration(logger);

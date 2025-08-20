@@ -11,11 +11,11 @@ namespace Acl.Fs.Core.Utility;
 
 internal static class MemoryOperations
 {
-    internal static bool LockMemory(this GCHandle handle, int size, IAuditLogger? auditLogger = null)
+    internal static bool LockMemory(this GCHandle handle, int size, IAuditLogger auditLogger)
     {
         if (handle.IsAllocated is not true)
         {
-            auditLogger?.Audit(
+            auditLogger.Audit(
                 AuditCategory.MemoryManagement,
                 AuditMessages.MemoryHandleNotAllocated,
                 AuditEventIds.MemoryLockFailed,
@@ -35,7 +35,7 @@ internal static class MemoryOperations
             {
                 address = handle.AddrOfPinnedObject();
 
-                auditLogger?.Audit(
+                auditLogger.Audit(
                     AuditCategory.MemoryManagement,
                     AuditMessages.MemoryLockAttempted,
                     AuditEventIds.MemoryLockAttempted,
@@ -48,7 +48,7 @@ internal static class MemoryOperations
                 var result = WindowsKernel.LockMemoryPages(address, (nuint)size);
 
                 if (result)
-                    auditLogger?.Audit(
+                    auditLogger.Audit(
                         AuditCategory.MemoryManagement,
                         AuditMessages.MemoryLockSucceeded,
                         AuditEventIds.MemoryLockSucceeded,
@@ -62,7 +62,7 @@ internal static class MemoryOperations
             }
             catch (Exception ex)
             {
-                auditLogger?.Audit(
+                auditLogger.Audit(
                     AuditCategory.MemoryManagement,
                     AuditMessages.MemoryLockFailed,
                     AuditEventIds.MemoryLockFailed,
@@ -79,7 +79,7 @@ internal static class MemoryOperations
             }
         }
 
-        auditLogger?.Audit(
+        auditLogger.Audit(
             AuditCategory.MemoryManagement,
             AuditMessages.MemoryNonWindowsPlatform,
             AuditEventIds.MemoryLockSucceeded,
@@ -92,11 +92,11 @@ internal static class MemoryOperations
         return true;
     }
 
-    internal static bool UnlockMemory(this GCHandle handle, int size, IAuditLogger? auditLogger = null)
+    internal static bool UnlockMemory(this GCHandle handle, int size, IAuditLogger auditLogger)
     {
         if (handle.IsAllocated is not true)
         {
-            auditLogger?.Audit(
+            auditLogger.Audit(
                 AuditCategory.MemoryManagement,
                 AuditMessages.MemoryHandleNotAllocated,
                 AuditEventIds.MemoryUnlockFailed,
@@ -116,7 +116,7 @@ internal static class MemoryOperations
             {
                 address = handle.AddrOfPinnedObject();
 
-                auditLogger?.Audit(
+                auditLogger.Audit(
                     AuditCategory.MemoryManagement,
                     AuditMessages.MemoryUnlockAttempted,
                     AuditEventIds.MemoryUnlockAttempted,
@@ -129,7 +129,7 @@ internal static class MemoryOperations
                 var result = WindowsKernel.UnlockMemoryPages(address, (nuint)size);
 
                 if (result)
-                    auditLogger?.Audit(
+                    auditLogger.Audit(
                         AuditCategory.MemoryManagement,
                         AuditMessages.MemoryUnlockSucceeded,
                         AuditEventIds.MemoryUnlockSucceeded,
@@ -143,7 +143,7 @@ internal static class MemoryOperations
             }
             catch (Exception ex)
             {
-                auditLogger?.Audit(
+                auditLogger.Audit(
                     AuditCategory.MemoryManagement,
                     AuditMessages.MemoryUnlockFailed,
                     AuditEventIds.MemoryUnlockFailed,
@@ -160,7 +160,7 @@ internal static class MemoryOperations
             }
         }
 
-        auditLogger?.Audit(
+        auditLogger.Audit(
             AuditCategory.MemoryManagement,
             AuditMessages.MemoryNonWindowsPlatform,
             AuditEventIds.MemoryUnlockSucceeded,

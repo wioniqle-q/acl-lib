@@ -14,7 +14,7 @@ internal static class DirectStreamFactory
         FileShare share,
         int bufferSize,
         FileOptions options,
-        ILogger? logger = null)
+        ILogger logger)
     {
         if (OperatingSystem.IsLinux())
             return new UnixDirectStream(path, mode, access, share, bufferSize, options, logger);

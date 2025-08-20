@@ -64,7 +64,7 @@ public sealed class V0ValidationStrategyTests
         Assert.Null(exception);
 
         // Previous minor version should be valid (if > 0)
-        if (CurrentMinorVersion > 1)
+        if (CurrentMinorVersion >= 1)
         {
             var previousException = Record.Exception(() => _strategy.Validate(CurrentMinorVersion - 1));
             Assert.Null(previousException);

@@ -11,7 +11,7 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
     internal readonly TStream InnerStream;
     private int _disposed;
 
-    protected DirectStreamBase(TStream innerStream, ILogger? logger = null)
+    protected DirectStreamBase(TStream innerStream, ILogger logger)
     {
         InnerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
         _platformConfiguration = PlatformConfigurationFactory.Create(logger);

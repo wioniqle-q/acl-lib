@@ -13,7 +13,7 @@ internal sealed class UnixDirectStream(
     FileShare share,
     int bufferSize,
     FileOptions options,
-    ILogger? logger = null)
+    ILogger logger)
     : DirectStreamBase<FileStream>(
         new FileStream(path ?? throw new ArgumentNullException(nameof(path)), mode, access, share, bufferSize, options),
         logger)
