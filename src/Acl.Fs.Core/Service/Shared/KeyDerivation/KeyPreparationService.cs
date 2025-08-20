@@ -53,10 +53,12 @@ internal sealed class KeyPreparationService(
         }
         catch
         {
-            if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
-                keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
             if (keyHandle.IsAllocated)
+            {
+                if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
+                    keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
                 keyHandle.Free();
+            }
 
             CryptographicOperations.ZeroMemory(derivedKeyData);
             CryptographicOperations.ZeroMemory(saltData);
@@ -100,10 +102,12 @@ internal sealed class KeyPreparationService(
         }
         catch
         {
-            if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
-                keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
             if (keyHandle.IsAllocated)
+            {
+                if (Interlocked.CompareExchange(ref isKeyMemoryLocked, 0, 1) is 1)
+                    keyHandle.UnlockMemory(derivedKeyData.Length, _auditLogger);
                 keyHandle.Free();
+            }
 
             CryptographicOperations.ZeroMemory(derivedKeyData);
             CryptographicOperations.ZeroMemory(saltData);
