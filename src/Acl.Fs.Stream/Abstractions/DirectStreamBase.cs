@@ -9,7 +9,7 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 {
     private readonly IPlatformConfiguration _platformConfiguration;
     internal readonly TStream InnerStream;
-    private volatile bool _disposed;
+    private int _disposed;
 
     protected DirectStreamBase(TStream innerStream, ILogger? logger = null)
     {
@@ -105,8 +105,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 
     protected override void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) is not 0)
+            return;
 
         if (disposing)
             InnerStream.Dispose();
@@ -116,8 +116,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 
     public override async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) is not 0)
+            return;
 
         if (InnerStream is IAsyncDisposable asyncDisposable)
             await asyncDisposable.DisposeAsync();
@@ -134,7 +134,8 @@ internal abstract class DirectStreamBase<TStream> : System.IO.Stream where TStre
 
     private void ThrowIfDisposed()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (Interlocked.CompareExchange(ref _disposed, 0, 0) is not 0)
+            ObjectDisposedException.ThrowIf(true, this);
     }
 
     protected abstract void ExecutePlatformSpecificFlush(CancellationToken cancellationToken);
