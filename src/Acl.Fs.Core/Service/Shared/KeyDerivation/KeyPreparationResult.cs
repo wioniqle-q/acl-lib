@@ -58,10 +58,8 @@ internal sealed class KeyPreparationResult : IKeyPreparationResult
     {
         lock (_lock)
         {
-            if (_disposed is not 0)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) is not 0)
                 return;
-
-            _disposed = 1;
 
             if (MemoryMarshal.TryGetArray(_derivedKey, out var derivedSegment))
                 CryptographicOperations.ZeroMemory(
@@ -82,7 +80,7 @@ internal sealed class KeyPreparationResult : IKeyPreparationResult
 
     private void ThrowIfDisposed()
     {
-        if (Volatile.Read(ref _disposed) is 0) return;
+        if (Interlocked.CompareExchange(ref _disposed, 0, 0) is 0) return;
         throw new ObjectDisposedException(nameof(KeyPreparationResult));
     }
 }
