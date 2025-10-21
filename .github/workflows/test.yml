@@ -40,14 +40,28 @@ jobs:
         shell: powershell
         continue-on-error: true
 
+      - name: Setup .NET 8 
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.318'  
+
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.111'  
+
+      - name: Verify Installed .NET Versions
+        run: dotnet --list-sdks
 
       - name: Install dependencies (AlmaLinux)
         if: matrix.os == 'almalinux'
-        run: dnf install -y icu dotnet-sdk-9.0
+        run: |
+          dnf install -y icu
+          # AlmaLinux için en son SDK'ları manuel yükleme
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 8.0.318 --install-dir /usr/share/dotnet
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.111 --install-dir /usr/share/dotnet
+          export PATH="/usr/share/dotnet:$PATH"
+          dotnet --list-sdks
 
       - name: Create NuGet cache directory (Windows)
         if: runner.os == 'Windows'
@@ -113,14 +127,27 @@ jobs:
         shell: powershell
         continue-on-error: true
 
+      - name: Setup .NET 8 
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.318' 
+
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.111'  
+
+      - name: Verify Installed .NET Versions
+        run: dotnet --list-sdks
 
       - name: Install dependencies (AlmaLinux)
         if: matrix.os == 'almalinux'
-        run: dnf install -y icu dotnet-sdk-9.0
+        run: |
+          dnf install -y icu
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 8.0.318 --install-dir /usr/share/dotnet
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.111 --install-dir /usr/share/dotnet
+          export PATH="/usr/share/dotnet:$PATH"
+          dotnet --list-sdks
 
       - name: Create NuGet cache directory (Windows)
         if: runner.os == 'Windows'
